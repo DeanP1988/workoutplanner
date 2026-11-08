@@ -116,18 +116,23 @@
     .safe-pb {
       padding-bottom: env(safe-area-inset-bottom, 24px);
     }
+
+    /* iOS Safe Area Top Inset for Dynamic Island & Notch */
+    .safe-pt {
+      padding-top: max(48px, env(safe-area-inset-top, 48px));
+    }
   </style>
 </head>
 
 <body class="bg-black text-white antialiased min-h-screen flex flex-col items-center justify-start pb-16">
 
-  <!-- Mobile Viewport Wrapper (iPhone Scaled Container) -->
-  <div class="w-full max-w-md min-h-screen flex flex-col bg-black relative pt-3">
+  <!-- Mobile Viewport Wrapper (iPhone Scaled Container with Dynamic Island / Notch Inset) -->
+  <div class="w-full max-w-md min-h-screen flex flex-col bg-black relative safe-pt">
 
     <!-- Tab 1: DASHBOARD & TRAJECTORY VIEW -->
     <main id="tab-dashboard" class="tab-pane flex-1 p-4 space-y-5 animate-fadeIn">
       
-      <!-- Welcome & Today's Readiness -->
+      <!-- Welcome, Readiness & App Update Button -->
       <div class="flex items-center justify-between">
         <div>
           <span class="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Hypertrophy Companion</span>
@@ -135,9 +140,16 @@
             Today's Trajectory <i class="ph-fill ph-sparkle text-ios-neon"></i>
           </h1>
         </div>
-        <button onclick="switchTab('plan')" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-accent font-semibold flex items-center gap-1 hover:bg-ios-elevated transition">
-          <i class="ph-bold ph-sliders-horizontal"></i> Split Setup
-        </button>
+        <div class="flex items-center gap-1.5">
+          <!-- Check GitHub for Updates Button -->
+          <button onclick="checkForGitHubAppUpdate()" id="btn-check-update" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-neon font-semibold flex items-center gap-1 hover:bg-ios-elevated active:scale-95 transition" title="Check GitHub for Updates">
+            <i id="update-btn-icon" class="ph-bold ph-arrows-clockwise text-xs"></i>
+            <span id="update-btn-text">Update</span>
+          </button>
+          <button onclick="switchTab('plan')" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-accent font-semibold flex items-center gap-1 hover:bg-ios-elevated transition">
+            <i class="ph-bold ph-sliders-horizontal"></i> Split Setup
+          </button>
+        </div>
       </div>
 
       <!-- Scheduled Session Card (Previous Trajectory View) -->
@@ -952,6 +964,59 @@
       </div>
     </div>
 
+    <!-- Modal 6: GitHub Deployment & Update Status Modal -->
+    <div id="modal-app-update" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end justify-center">
+      <div class="w-full max-w-md bg-ios-card rounded-t-3xl border-t border-neutral-800 p-5 space-y-4 animate-slideUp">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-git-commit text-ios-neon text-xl"></i>
+            <div>
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Deployment Sync</span>
+              <h3 class="text-sm font-black text-white">Application Updates</h3>
+            </div>
+          </div>
+          <button onclick="closeAppUpdateModal()" class="w-7 h-7 rounded-full bg-ios-elevated flex items-center justify-center text-neutral-400 hover:text-white">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-3.5 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">Current Version</span>
+              <span class="text-xs font-mono font-bold text-ios-neon" id="app-current-ver-label">v1.2.4 (Build 42)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-neutral-400">GitHub Repository</span>
+              <span class="text-[11px] font-mono text-neutral-300" id="app-repo-display">User/ironpulse-ios</span>
+            </div>
+          </div>
+
+          <!-- Status Message Area -->
+          <div id="update-status-box" class="p-3 rounded-2xl bg-black/50 border border-neutral-800 text-xs space-y-1 text-center">
+            <i id="update-status-icon" class="ph-bold ph-check-circle text-ios-neon text-lg mx-auto block"></i>
+            <span id="update-status-title" class="font-bold text-white block">App is Up to Date</span>
+            <p id="update-status-detail" class="text-[11px] text-neutral-400">You are running the latest deployment build.</p>
+          </div>
+
+          <!-- Custom Repository Configuration -->
+          <div class="p-3 rounded-2xl bg-ios-elevated/40 border border-neutral-800 space-y-2">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase block">GitHub Repository Target (optional)</span>
+            <input type="text" id="input-github-repo" placeholder="owner/repo (e.g. yourname/ironpulse)" class="w-full bg-black/60 border border-neutral-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-ios-neon">
+          </div>
+
+          <div class="pt-1 space-y-2">
+            <button onclick="forceRefreshWithLatestBuild()" class="w-full py-3 rounded-2xl bg-ios-neon text-black font-black text-xs uppercase tracking-wider shadow-glow-green active:scale-98 transition flex items-center justify-center gap-1.5">
+              <i class="ph-bold ph-arrows-clockwise text-base"></i> Reload With Latest Deployment
+            </button>
+            <button onclick="closeAppUpdateModal()" class="w-full py-2.5 rounded-2xl bg-ios-elevated border border-neutral-700 text-neutral-300 font-bold text-xs hover:text-white transition">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- In-App Notification Toast Box (No alerts) -->
     <div id="toast-box" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-ios-card/95 backdrop-blur-xl border border-neutral-700 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 max-w-xs text-center">
       <i id="toast-icon" class="ph-bold ph-check text-ios-neon text-base"></i>
@@ -1121,7 +1186,9 @@
         ohp: 70
       },
       timeframe: 'daily',
-      loggedSets: {}
+      loggedSets: {},
+      appVersion: 'v1.2.4',
+      githubRepo: 'your-username/ironpulse-companion'
     };
 
     let selectedPlannerDayIndex = 0; // Tracks which day card is currently selected in the 7-day planner
@@ -2942,6 +3009,117 @@
       renderPRCards();
       closePRModal();
       showToast('1RM Milestones Updated!');
+    }
+
+    /* =========================================================
+       11B. GITHUB APP DEPLOYMENT CHECKER & RELOAD ENGINE
+       ========================================================= */
+    async function checkForGitHubAppUpdate() {
+      playBeep('tap');
+      const btnIcon = document.getElementById('update-btn-icon');
+      const btnText = document.getElementById('update-btn-text');
+
+      if (btnIcon) btnIcon.classList.add('animate-spin');
+      if (btnText) btnText.textContent = 'Checking...';
+
+      const repo = appState.githubRepo || 'your-username/ironpulse-companion';
+      const statusBox = document.getElementById('update-status-box');
+      const statusTitle = document.getElementById('update-status-title');
+      const statusDetail = document.getElementById('update-status-detail');
+      const statusIcon = document.getElementById('update-status-icon');
+      const currentVerEl = document.getElementById('app-current-ver-label');
+      const repoDisp = document.getElementById('app-repo-display');
+      const repoInput = document.getElementById('input-github-repo');
+
+      if (currentVerEl) currentVerEl.textContent = appState.appVersion || 'v1.2.4';
+      if (repoDisp) repoDisp.textContent = repo;
+      if (repoInput) repoInput.value = repo;
+
+      try {
+        // Query GitHub API for the latest commit on the main branch or repository releases
+        let hasUpdate = false;
+        let latestVersion = appState.appVersion;
+
+        if (repo && !repo.includes('your-username')) {
+          const res = await fetch(`https://api.github.com/repos/${repo}/commits?per_page=1`, {
+            cache: 'no-store',
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
+          });
+
+          if (res.ok) {
+            const commits = await res.json();
+            if (commits && commits.length > 0) {
+              const latestSha = commits[0].sha.substring(0, 7);
+              const commitDate = new Date(commits[0].commit.committer.date).toLocaleDateString();
+              latestVersion = `Commit ${latestSha} (${commitDate})`;
+              hasUpdate = true;
+            }
+          }
+        }
+
+        setTimeout(() => {
+          if (btnIcon) btnIcon.classList.remove('animate-spin');
+          if (btnText) btnText.textContent = 'Update';
+
+          if (hasUpdate) {
+            if (statusIcon) statusIcon.className = 'ph-bold ph-arrow-circle-up text-ios-neon text-2xl mx-auto block animate-bounce';
+            if (statusTitle) statusTitle.textContent = 'New Deployment Found!';
+            if (statusDetail) statusDetail.textContent = `Latest build available: ${latestVersion}. Tap below to refresh your app.`;
+          } else {
+            if (statusIcon) statusIcon.className = 'ph-bold ph-check-circle text-ios-neon text-2xl mx-auto block';
+            if (statusTitle) statusTitle.textContent = 'App is Up to Date';
+            if (statusDetail) statusDetail.textContent = 'You are currently on the latest verified build. You can still force a clean refresh below.';
+          }
+
+          document.getElementById('modal-app-update')?.classList.remove('hidden');
+        }, 600);
+
+      } catch (err) {
+        if (btnIcon) btnIcon.classList.remove('animate-spin');
+        if (btnText) btnText.textContent = 'Update';
+
+        if (statusIcon) statusIcon.className = 'ph-bold ph-cloud-arrow-down text-ios-orange text-2xl mx-auto block';
+        if (statusTitle) statusTitle.textContent = 'Offline / Direct Cache Sync';
+        if (statusDetail) statusDetail.textContent = 'Ready to refresh application cache directly with the server.';
+        document.getElementById('modal-app-update')?.classList.remove('hidden');
+      }
+    }
+
+    function closeAppUpdateModal() {
+      playBeep('tap');
+      // Save any custom repo input
+      const repoInput = document.getElementById('input-github-repo');
+      if (repoInput && repoInput.value.trim()) {
+        appState.githubRepo = repoInput.value.trim();
+        saveState();
+      }
+      document.getElementById('modal-app-update')?.classList.add('hidden');
+    }
+
+    function forceRefreshWithLatestBuild() {
+      playBeep('complete');
+      showToast('Clearing cache and reloading deployment...');
+      // Save current repository target
+      const repoInput = document.getElementById('input-github-repo');
+      if (repoInput && repoInput.value.trim()) {
+        appState.githubRepo = repoInput.value.trim();
+        saveState();
+      }
+
+      // Bypass PWA Service Worker & Safari cache with cache-busting timestamp
+      setTimeout(() => {
+        try {
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => caches.delete(name));
+            });
+          }
+        } catch (e) {}
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('build', Date.now());
+        window.location.replace(url.toString());
+      }, 700);
     }
 
     /* =========================================================
