@@ -1,0 +1,3433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>IronPulse • iOS Hypertrophy Companion</title>
+  
+  <!-- iOS Standalone Web App Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IronPulse">
+  <meta name="theme-color" content="#000000">
+
+  <!-- Dynamic Apple Touch Icon Link (populated at runtime with high-res SVG canvas) -->
+  <link rel="apple-touch-icon" id="apple-touch-icon-link" href="">
+  <link rel="icon" type="image/svg+xml" id="favicon-link" href="">
+
+  <!-- Web App Manifest as Data URI -->
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22IronPulse%20Workout%20Companion%22%2C%22short_name%22%3A%22IronPulse%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23000000%22%2C%22theme_color%22%3A%22%23000000%22%7D">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  
+  <!-- Tone.js for Native-like Haptic Beeps & Audio Feedback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <!-- Chart.js for Volume Progression Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind Configuration for iOS Dark Palette -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ios: {
+              bg: '#000000',
+              card: '#1C1C1E',
+              elevated: '#2C2C2E',
+              secondary: '#3A3A3C',
+              neon: '#10B981',       /* Hypertrophy electric green */
+              accent: '#0A84FF',     /* iOS System Blue */
+              orange: '#FF9F0A',     /* Rest timer & warm-up orange */
+              purple: '#BF5AF2',     /* Protein & supplement purple */
+              pink: '#FF375F',       /* Failure & intense sets */
+              red: '#FF453A'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Inter', 'sans-serif'],
+            mono: ['"SF Mono"', 'ui-monospace', 'monospace']
+          },
+          boxShadow: {
+            'glow-green': '0 0 20px -3px rgba(16, 185, 129, 0.45)',
+            'glow-blue': '0 0 20px -3px rgba(10, 132, 255, 0.45)',
+            'glow-purple': '0 0 20px -3px rgba(191, 90, 242, 0.45)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* iOS Momentum Scrolling & Native Touch Feel */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #000000;
+      color: #FFFFFF;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, sans-serif;
+    }
+    
+    /* Custom Thin Scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3A3A3C;
+      border-radius: 9999px;
+    }
+
+    /* Anatomical Muscle Map Interactive Styling */
+    .muscle-path {
+      fill: #2C2C2E;
+      stroke: #3A3A3C;
+      stroke-width: 1.2;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .muscle-path:hover {
+      fill: #48484A;
+    }
+    .muscle-path.active {
+      fill: #10B981 !important;
+      stroke: #34D399 !important;
+      filter: drop-shadow(0px 0px 4px rgba(16, 185, 129, 0.8));
+    }
+
+    /* Modal Backdrop Transitions */
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Safe Bottom Inset */
+    .safe-pb {
+      padding-bottom: env(safe-area-inset-bottom, 24px);
+    }
+  </style>
+</head>
+
+<body class="bg-black text-white antialiased min-h-screen flex flex-col items-center justify-start pb-16">
+
+  <!-- Mobile Viewport Wrapper (iPhone Scaled Container) -->
+  <div class="w-full max-w-md min-h-screen flex flex-col bg-black relative">
+
+    <!-- Top iOS Status Bar (Native Feel) -->
+    <header class="sticky top-0 z-40 bg-black/85 backdrop-blur-md px-6 pt-3 pb-2 flex items-center justify-between border-b border-neutral-900">
+      <div class="flex items-center gap-1.5 font-bold text-xs tracking-tight text-white" id="clock-time">
+        09:41
+      </div>
+      <div class="flex items-center gap-2 text-neutral-300 text-xs">
+        <i class="ph-bold ph-chart-bar"></i>
+        <i class="ph-bold ph-wifi-high"></i>
+        <i class="ph-fill ph-battery-full text-ios-neon text-sm"></i>
+      </div>
+    </header>
+
+    <!-- Tab 1: DASHBOARD & TRAJECTORY VIEW -->
+    <main id="tab-dashboard" class="tab-pane flex-1 p-4 space-y-5 animate-fadeIn">
+      
+      <!-- Welcome & Today's Readiness -->
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Hypertrophy Companion</span>
+          <h1 class="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
+            Today's Trajectory <i class="ph-fill ph-sparkle text-ios-neon"></i>
+          </h1>
+        </div>
+        <button onclick="switchTab('plan')" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-accent font-semibold flex items-center gap-1 hover:bg-ios-elevated transition">
+          <i class="ph-bold ph-sliders-horizontal"></i> Split Setup
+        </button>
+      </div>
+
+      <!-- iOS Home Screen Banner (Dismissible Tip) -->
+      <div id="ios-pwa-tip" class="p-3 rounded-2xl bg-gradient-to-r from-ios-card via-ios-elevated to-ios-card border border-neutral-800/90 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2.5">
+          <div id="pwa-icon-preview" class="w-9 h-9 rounded-xl overflow-hidden shadow-glow-green border border-ios-neon/30 flex-shrink-0">
+            <!-- Rendered icon thumbnail -->
+          </div>
+          <div>
+            <span class="text-[10px] font-bold text-ios-neon uppercase block">Add to iPhone Home Screen</span>
+            <span class="text-[11px] text-neutral-300">Tap <i class="ph-bold ph-export text-ios-accent"></i> in Safari & choose <b>"Add to Home Screen"</b></span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('ios-pwa-tip').remove()" class="text-neutral-500 hover:text-white p-1">
+          <i class="ph-bold ph-x text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Scheduled Session Card (Previous Trajectory View) -->
+      <div class="bg-gradient-to-r from-ios-card via-ios-elevated to-ios-card rounded-3xl p-4 border border-neutral-800 shadow-lg space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-calendar text-ios-neon text-lg"></i>
+            <div>
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Upcoming Session</span>
+              <h2 class="text-sm font-black text-white" id="dashboard-session-name">Push Hypertrophy Focus</h2>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold text-ios-neon px-2 py-0.5 rounded-full bg-ios-neon/10 border border-ios-neon/30" id="dashboard-scheduled-time">Today • 18:00</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex flex-wrap gap-1" id="dashboard-muscle-badges">
+            <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300">Chest</span>
+            <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300">Shoulders</span>
+            <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300">Triceps</span>
+          </div>
+          <button onclick="switchTab('train')" class="px-3 py-1.5 rounded-xl bg-ios-neon text-black font-black text-xs uppercase tracking-wider shadow-glow-green active:scale-95 transition flex items-center gap-1">
+            Start Session <i class="ph-bold ph-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Apple Fitness Style 3 Activity Rings Card -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 shadow-lg space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="ph-fill ph-circle-notch text-ios-neon text-lg"></i>
+            <h2 class="text-xs font-black text-white uppercase tracking-wider">Daily Hypertrophy Rings</h2>
+          </div>
+          <span class="text-[10px] text-neutral-400 font-bold" id="rings-percentage-label">68% Complete</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <!-- Ring 1: Workout -->
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 text-center space-y-1">
+            <div class="text-[10px] font-bold text-neutral-400">Workout</div>
+            <div class="text-base font-black text-ios-neon" id="ring-val-workout">1 / 1</div>
+            <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+              <div id="ring-bar-workout" class="bg-ios-neon h-full transition-all duration-500" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <!-- Ring 2: Protein -->
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 text-center space-y-1">
+            <div class="text-[10px] font-bold text-neutral-400">Protein</div>
+            <div class="text-base font-black text-ios-purple" id="ring-val-protein">120g</div>
+            <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+              <div id="ring-bar-protein" class="bg-ios-purple h-full transition-all duration-500" style="width: 70%;"></div>
+            </div>
+          </div>
+
+          <!-- Ring 3: Supplements -->
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 text-center space-y-1">
+            <div class="text-[10px] font-bold text-neutral-400">Supps</div>
+            <div class="text-base font-black text-ios-accent" id="ring-val-supps">3 / 4</div>
+            <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+              <div id="ring-bar-supps" class="bg-ios-accent h-full transition-all duration-500" style="width: 75%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Protein Logger Bar -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-ios-purple/20 flex items-center justify-center text-ios-purple">
+              <i class="ph-bold ph-fork-knife"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-neutral-400 uppercase">Protein Target</span>
+              <h3 class="text-xs font-black text-white" id="protein-progress-counter">120g / 170g Target</h3>
+            </div>
+          </div>
+          <span class="text-xs font-mono font-bold text-ios-purple" id="protein-remaining-label">50g left</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
+          <div id="protein-progress-fill" class="bg-gradient-to-r from-purple-500 to-ios-purple h-full transition-all duration-500" style="width: 70%;"></div>
+        </div>
+
+        <!-- Quick Log Buttons -->
+        <div class="flex items-center gap-2 pt-1">
+          <button onclick="quickAddProtein(10)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition">
+            +10g Snack
+          </button>
+          <button onclick="quickAddProtein(25)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition">
+            +25g Shake
+          </button>
+          <button onclick="quickAddProtein(40)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition">
+            +40g Meal
+          </button>
+        </div>
+      </div>
+
+      <!-- Multi-Timeframe Volume Analytics (Daily / Weekly / Monthly) -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Hypertrophy Analytics</span>
+            <h3 class="text-sm font-black text-white flex items-center gap-1.5">
+              Volume Progression <i class="ph-bold ph-trend-up text-ios-neon"></i>
+            </h3>
+          </div>
+          
+          <!-- Segmented Control for Timeframe -->
+          <div class="flex bg-black/60 p-1 rounded-xl border border-neutral-800 text-[10px] font-bold">
+            <button id="btn-tf-daily" onclick="setTimeframe('daily')" class="px-2.5 py-1 rounded-lg bg-ios-elevated text-white transition">Daily</button>
+            <button id="btn-tf-weekly" onclick="setTimeframe('weekly')" class="px-2.5 py-1 rounded-lg text-neutral-400 transition hover:text-white">Weekly</button>
+            <button id="btn-tf-monthly" onclick="setTimeframe('monthly')" class="px-2.5 py-1 rounded-lg text-neutral-400 transition hover:text-white">Monthly</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Chart Metrics Header -->
+        <div class="flex items-center justify-between text-xs font-mono py-1 px-2 rounded-xl bg-neutral-900/60 border border-neutral-800/80">
+          <div>
+            <span class="text-neutral-500 block text-[9px] uppercase">Period Tonnage</span>
+            <span class="text-white font-bold" id="metric-period-tonnage">48,250 kg</span>
+          </div>
+          <div>
+            <span class="text-neutral-500 block text-[9px] uppercase">Avg Session</span>
+            <span class="text-ios-neon font-bold" id="metric-avg-volume">6,890 kg</span>
+          </div>
+          <div>
+            <span class="text-neutral-500 block text-[9px] uppercase">Peak Session</span>
+            <span class="text-ios-orange font-bold" id="metric-peak-volume">8,450 kg</span>
+          </div>
+        </div>
+
+        <div class="h-44 w-full">
+          <canvas id="volumeProgressChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Weekly Hypertrophy Landmarks (MEV / MAV / MRV) Tracker -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Hypertrophy Volume Landmarks</span>
+            <h3 class="text-xs font-black text-white flex items-center gap-1.5">
+              Weekly Set Thresholds (RP Science) <i class="ph-bold ph-shield-check text-ios-neon"></i>
+            </h3>
+          </div>
+          <span class="text-[9px] font-mono text-neutral-400">Target: 10-20 Sets</span>
+        </div>
+
+        <!-- Landmarks List for Primary Muscle Groups -->
+        <div class="space-y-2.5" id="landmarks-list-container">
+          <!-- Populated dynamically via renderHypertrophyLandmarks() -->
+        </div>
+      </div>
+
+      <!-- Muscle Recovery Heatmap (Biological 48h Window) -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Recovery Readiness</span>
+            <h3 class="text-xs font-black text-white">Muscle Group Latency (48h MPS)</h3>
+          </div>
+          <span class="text-[10px] text-ios-neon font-bold">Optimal Window</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2" id="recovery-heatmap-container">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Personal Records (PRs & 1RM Hall of Fame) -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Strength Milestone</span>
+            <h3 class="text-xs font-black text-white flex items-center gap-1">
+              Estimated 1RM PRs <i class="ph-fill ph-trophy text-yellow-400"></i>
+            </h3>
+          </div>
+          <button onclick="openPRModal()" class="text-[10px] text-ios-accent font-semibold hover:underline">Update</button>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2 text-center" id="pr-cards-container">
+          <!-- Bench, Squat, Deadlift, OHP -->
+        </div>
+      </div>
+
+      <!-- Previous Sessions History Log Button & Preview -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-clock-counter-clockwise text-ios-accent text-lg"></i>
+            <div>
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Training History</span>
+              <h3 class="text-xs font-black text-white">Previous Gym Sessions Log</h3>
+            </div>
+          </div>
+          <button onclick="openWorkoutHistoryModal()" class="px-2.5 py-1 rounded-xl bg-ios-elevated border border-neutral-700 text-[10px] font-bold text-ios-accent hover:bg-neutral-800 transition">
+            View All Logs
+          </button>
+        </div>
+
+        <!-- Recent Session Snippet -->
+        <div id="recent-history-snippet" class="p-3 rounded-2xl bg-black/40 border border-neutral-800/80 space-y-1.5">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Tab 2: TRAIN / ACTIVE WORKOUT LOGGER -->
+    <main id="tab-train" class="tab-pane hidden flex-1 p-4 space-y-4 animate-fadeIn">
+      
+      <!-- Top Active Workout Header -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-ios-neon uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-ios-neon animate-pulse"></span> Active Hypertrophy Session
+            </span>
+            <h2 class="text-lg font-black text-white tracking-tight" id="active-session-title">Push & Shoulders Hypertrophy</h2>
+          </div>
+          <button onclick="openPlateCalculatorModal(70)" class="p-2 rounded-xl bg-ios-elevated text-ios-accent border border-neutral-700/80 active:scale-95 transition" title="Plate Calculator">
+            <i class="ph-bold ph-calculator text-base"></i>
+          </button>
+        </div>
+
+        <!-- NEW: Real-Time Workout Guidance "Now & Next" Banner -->
+        <div class="p-3 rounded-2xl bg-gradient-to-r from-neutral-900 via-ios-elevated to-neutral-900 border border-neutral-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-ios-neon uppercase tracking-wider flex items-center gap-1.5">
+              <i class="ph-bold ph-lightning"></i> What You're Doing Right Now
+            </span>
+            <span class="text-[10px] font-mono font-bold text-neutral-400" id="workout-progress-steps">Exercise 1 of 5</span>
+          </div>
+
+          <!-- Highlighted Current Action -->
+          <div class="flex items-center justify-between pt-0.5">
+            <div>
+              <span class="text-xs font-black text-white block" id="current-task-exercise">Barbell Bench Press</span>
+              <span class="text-[11px] font-mono text-ios-neon font-bold" id="current-task-detail">Target: Set 1 • Warm-Up (40 kg × 12 reps)</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] font-bold text-neutral-400 block uppercase">Next In Queue</span>
+              <span class="text-[10px] font-mono text-neutral-300 font-bold" id="upcoming-task-preview">Set 2 (65 kg)</span>
+            </div>
+          </div>
+
+          <!-- Overall Workout Progress Bar -->
+          <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+            <div id="workout-total-progress-bar" class="bg-ios-neon h-full transition-all duration-500" style="width: 25%;"></div>
+          </div>
+        </div>
+
+        <!-- Session Overview Stats -->
+        <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-neutral-800/80">
+          <div class="p-2 rounded-xl bg-ios-elevated/50">
+            <span class="text-[9px] text-neutral-400 font-bold block uppercase">Total Tonnage</span>
+            <span class="text-sm font-black text-white font-mono" id="active-total-volume">3,850 kg</span>
+          </div>
+          <div class="p-2 rounded-xl bg-ios-elevated/50">
+            <span class="text-[9px] text-neutral-400 font-bold block uppercase">Sets Done</span>
+            <span class="text-sm font-black text-ios-neon font-mono" id="active-sets-count">5 / 15</span>
+          </div>
+          <div class="p-2 rounded-xl bg-ios-elevated/50">
+            <span class="text-[9px] text-neutral-400 font-bold block uppercase">Avg RIR</span>
+            <span class="text-sm font-black text-ios-orange font-mono" id="active-avg-rir">1.5 RIR</span>
+          </div>
+        </div>
+
+        <!-- Rest Timer Bar & Floating Trigger -->
+        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-neutral-900 border border-neutral-800">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-ios-orange/20 flex items-center justify-center text-ios-orange">
+              <i class="ph-bold ph-timer text-sm"></i>
+            </div>
+            <div>
+              <span class="text-[9px] font-bold text-neutral-400 uppercase block" id="timer-status-subtext">Rest Interval</span>
+              <span class="text-xs font-mono font-black text-white" id="timer-display">01:30</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="adjustRestTimer(-15)" class="px-2 py-1 rounded-lg bg-ios-elevated text-xs font-bold text-neutral-300 hover:text-white">-15s</button>
+            <button onclick="toggleRestTimer()" id="btn-timer-toggle" class="px-3 py-1 rounded-lg bg-ios-orange text-xs font-bold text-black active:scale-95 transition">Start</button>
+            <button onclick="adjustRestTimer(30)" class="px-2 py-1 rounded-lg bg-ios-elevated text-xs font-bold text-neutral-300 hover:text-white">+30s</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Exercise List Container -->
+      <div id="active-exercises-container" class="space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Finish Workout Action Button -->
+      <div class="pt-2">
+        <button onclick="finishAndLogWorkout()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-ios-neon text-black font-black text-sm uppercase tracking-wider shadow-glow-green active:scale-98 transition flex items-center justify-center gap-2">
+          <i class="ph-bold ph-check-circle text-lg"></i> Finish Workout & Log Volume
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Tab 3: SETUP & SCHEDULE MATRIX (BODY MAP & EQUIPMENT) -->
+    <main id="tab-plan" class="tab-pane hidden flex-1 p-4 space-y-5 animate-fadeIn">
+      
+      <!-- Split Frequency Picker -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Training Architecture</span>
+            <h2 class="text-sm font-black text-white">Weekly Frequency Split</h2>
+          </div>
+          <span class="text-xs font-bold text-ios-neon" id="split-name-label">4-Day Upper / Lower</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="selectSplitFrequency(3)" id="btn-split-3" class="py-2.5 rounded-xl border border-neutral-700 bg-ios-elevated text-xs font-bold text-neutral-300 hover:text-white transition">
+            3-Day Full Body
+          </button>
+          <button onclick="selectSplitFrequency(4)" id="btn-split-4" class="py-2.5 rounded-xl border border-ios-neon bg-ios-neon/15 text-xs font-bold text-ios-neon transition">
+            4-Day Upper/Lower
+          </button>
+          <button onclick="selectSplitFrequency(5)" id="btn-split-5" class="py-2.5 rounded-xl border border-neutral-700 bg-ios-elevated text-xs font-bold text-neutral-300 hover:text-white transition">
+            5-6 Day PPL
+          </button>
+        </div>
+
+        <!-- NEW: Superset / Paired Sets Mode Toggle -->
+        <div class="pt-2 border-t border-neutral-800/80 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-white">Antagonist Supersets</span>
+              <span id="superset-mode-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400">OFF</span>
+            </div>
+            <p class="text-[10px] text-neutral-400 leading-tight">Pairs opposing muscles (Chest & Back, Biceps & Triceps) to save time</p>
+          </div>
+          <button onclick="toggleSupersetMode()" id="btn-toggle-superset" class="w-12 h-6 bg-neutral-800 rounded-full p-0.5 transition-colors duration-200 ease-in-out relative flex items-center">
+            <span id="superset-toggle-knob" class="w-5 h-5 bg-neutral-400 rounded-full transition-transform duration-200 ease-in-out transform translate-x-0"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Weekly Schedule Suggestions & Per-Day Customizer -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Companion Suggestions</span>
+            <h3 class="text-xs font-black text-white flex items-center gap-1.5">
+              7-Day Weekly Planner <i class="ph-bold ph-calendar-check text-ios-neon"></i>
+            </h3>
+          </div>
+          <button onclick="resetWeeklyPlanToDefault()" class="text-[10px] text-ios-accent font-semibold hover:underline">
+            Reset Suggestions
+          </button>
+        </div>
+        <p class="text-[10px] text-neutral-400 leading-tight">
+          Select any day to highlight and edit its target muscles & equipment below.
+        </p>
+
+        <!-- 7-Day Interactive Cards -->
+        <div class="space-y-2" id="weekly-plan-cards-container">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Selected Day Quick Actions / Sync Banner -->
+        <div id="planner-selected-banner" class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 flex items-center justify-between">
+          <div>
+            <span class="text-[9px] font-bold text-neutral-400 uppercase block" id="selected-day-banner-label">Selected Day</span>
+            <span class="text-xs font-black text-white" id="selected-day-banner-title">Monday • Upper Body Power</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="toggleSelectedDayRest()" id="btn-selected-day-rest" class="px-2.5 py-1 rounded-xl bg-neutral-800 text-[10px] font-bold text-neutral-300 hover:text-white transition">
+              Mark Rest
+            </button>
+            <button onclick="launchSelectedDayIntoTrain()" class="px-3 py-1 rounded-xl bg-ios-neon text-black text-[10px] font-black uppercase tracking-wider shadow-glow-green active:scale-95 transition flex items-center gap-1">
+              <i class="ph-bold ph-play"></i> Queue Train
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Vector Anatomical Body Map -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Target Anatomy (<span id="anatomy-day-label" class="text-ios-neon">Today</span>)</span>
+            <h3 class="text-xs font-black text-white">Anatomical Muscle Selector</h3>
+          </div>
+          
+          <!-- Front / Back Toggle -->
+          <div class="flex bg-black/60 p-1 rounded-xl border border-neutral-800 text-[10px] font-bold">
+            <button id="btn-view-front" onclick="setBodyMapView('front')" class="px-2.5 py-1 rounded-lg bg-ios-elevated text-white transition">Front</button>
+            <button id="btn-view-back" onclick="setBodyMapView('back')" class="px-2.5 py-1 rounded-lg text-neutral-400 transition hover:text-white">Back</button>
+          </div>
+        </div>
+
+        <!-- SVG Anatomical Map Illustration -->
+        <div class="w-full flex justify-center py-2 bg-black/40 rounded-2xl border border-neutral-800/80">
+          <svg id="anatomy-svg" viewBox="0 0 200 320" class="w-48 h-64 select-none">
+            <!-- Front View Elements -->
+            <g id="svg-front-view">
+              <!-- Head / Neck -->
+              <ellipse cx="100" cy="30" rx="14" ry="18" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1.2"/>
+              <path d="M92 48 L108 48 L110 58 L90 58 Z" fill="#2C2C2E"/>
+
+              <!-- Shoulders (Deltoids) -->
+              <path id="path-shoulders-left" class="muscle-path" onclick="toggleMuscleFromMap('shoulders')" d="M72 60 Q60 68 62 88 Q74 84 76 72 Z" />
+              <path id="path-shoulders-right" class="muscle-path" onclick="toggleMuscleFromMap('shoulders')" d="M128 60 Q140 68 138 88 Q126 84 124 72 Z" />
+
+              <!-- Chest (Pectorals) -->
+              <path id="path-chest" class="muscle-path" onclick="toggleMuscleFromMap('chest')" d="M78 65 Q100 68 100 85 Q78 85 76 72 Z M122 65 Q100 68 100 85 Q122 85 124 72 Z" />
+
+              <!-- Core / Abs -->
+              <path id="path-core" class="muscle-path" onclick="toggleMuscleFromMap('core')" d="M84 92 L116 92 L114 135 L86 135 Z M86 102 L114 102 M86 114 L114 114 M100 92 L100 135" />
+
+              <!-- Biceps -->
+              <path id="path-biceps-left" class="muscle-path" onclick="toggleMuscleFromMap('biceps')" d="M60 90 Q54 110 62 125 Q70 115 66 95 Z" />
+              <path id="path-biceps-right" class="muscle-path" onclick="toggleMuscleFromMap('biceps')" d="M140 90 Q146 110 138 125 Q130 115 134 95 Z" />
+
+              <!-- Quads -->
+              <path id="path-quads-left" class="muscle-path" onclick="toggleMuscleFromMap('quads')" d="M80 145 Q70 190 76 225 Q92 225 94 150 Z" />
+              <path id="path-quads-right" class="muscle-path" onclick="toggleMuscleFromMap('quads')" d="M120 145 Q130 190 124 225 Q108 225 106 150 Z" />
+
+              <!-- Calves (Front Shin/Tibialis) -->
+              <path id="path-calves-front-left" class="muscle-path" onclick="toggleMuscleFromMap('calves')" d="M76 235 Q70 270 78 295 Q86 295 86 235 Z" />
+              <path id="path-calves-front-right" class="muscle-path" onclick="toggleMuscleFromMap('calves')" d="M124 235 Q130 270 122 295 Q114 295 114 235 Z" />
+            </g>
+
+            <!-- Back View Elements -->
+            <g id="svg-back-view" class="hidden">
+              <!-- Head / Neck Rear -->
+              <ellipse cx="100" cy="30" rx="14" ry="18" fill="#2C2C2E" stroke="#3A3A3C" stroke-width="1.2"/>
+
+              <!-- Back / Traps & Lats -->
+              <path id="path-back" class="muscle-path" onclick="toggleMuscleFromMap('back')" d="M82 58 L118 58 L130 80 Q120 120 100 135 Q80 120 70 80 Z" />
+
+              <!-- Rear Delts -->
+              <path id="path-rear-delts-left" class="muscle-path" onclick="toggleMuscleFromMap('shoulders')" d="M70 60 Q58 72 62 86 Q72 80 74 68 Z" />
+              <path id="path-rear-delts-right" class="muscle-path" onclick="toggleMuscleFromMap('shoulders')" d="M130 60 Q142 72 138 86 Q128 80 126 68 Z" />
+
+              <!-- Triceps -->
+              <path id="path-triceps-left" class="muscle-path" onclick="toggleMuscleFromMap('triceps')" d="M59 90 Q54 110 61 125 Q68 115 65 95 Z" />
+              <path id="path-triceps-right" class="muscle-path" onclick="toggleMuscleFromMap('triceps')" d="M141 90 Q146 110 139 125 Q132 115 135 95 Z" />
+
+              <!-- Glutes -->
+              <path id="path-glutes" class="muscle-path" onclick="toggleMuscleFromMap('glutes')" d="M78 140 Q100 142 100 165 Q78 165 74 145 Z M122 140 Q100 142 100 165 Q122 165 126 145 Z" />
+
+              <!-- Hamstrings -->
+              <path id="path-hamstrings-left" class="muscle-path" onclick="toggleMuscleFromMap('hamstrings')" d="M76 170 Q68 205 75 230 Q90 230 92 170 Z" />
+              <path id="path-hamstrings-right" class="muscle-path" onclick="toggleMuscleFromMap('hamstrings')" d="M124 170 Q132 205 125 230 Q110 230 108 170 Z" />
+
+              <!-- Calves (Gastrocnemius/Soleus) -->
+              <path id="path-calves-back-left" class="muscle-path" onclick="toggleMuscleFromMap('calves')" d="M74 235 Q66 265 76 295 Q86 295 86 235 Z" />
+              <path id="path-calves-back-right" class="muscle-path" onclick="toggleMuscleFromMap('calves')" d="M126 235 Q134 265 124 295 Q114 295 114 235 Z" />
+            </g>
+          </svg>
+        </div>
+        <div class="text-center text-[10px] text-neutral-400">
+          Tap body parts above or select the corresponding muscle tiles below
+        </div>
+      </div>
+
+      <!-- Muscle Focus Tiles -->
+      <div class="space-y-2">
+        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Target Muscle Groups</span>
+        <div class="grid grid-cols-2 gap-2" id="muscle-tiles-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Available Equipment Tiles (Expanded Catalog) -->
+      <div class="space-y-2">
+        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Available Gym Equipment</span>
+        <div class="grid grid-cols-2 gap-2" id="equipment-tiles-grid">
+          <!-- Populated dynamically with Dumbbell, Barbell, Cable, Smith Machine, Leg Press, etc. -->
+        </div>
+      </div>
+
+      <!-- Generate Smart Workout CTA -->
+      <div class="pt-2">
+        <button onclick="generateCustomWorkout()" class="w-full py-3.5 rounded-2xl bg-ios-neon text-black font-black text-sm uppercase tracking-wider shadow-glow-green active:scale-98 transition flex items-center justify-center gap-2">
+          <i class="ph-bold ph-arrows-clockwise text-lg"></i> Mix Up & Generate Workout
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Tab 4: LOG / PREVIOUS SESSIONS SUMMARY PAGE -->
+    <main id="tab-log" class="tab-pane hidden flex-1 p-4 space-y-4 animate-fadeIn">
+      
+      <!-- Log Page Header & Lifetime Overview -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Historical Performance</span>
+            <h2 class="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
+              Previous Sessions <i class="ph-fill ph-book-bookmark text-ios-neon"></i>
+            </h2>
+          </div>
+          <span class="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-ios-neon/15 text-ios-neon border border-ios-neon/30" id="log-total-count-badge">3 Completed</span>
+        </div>
+
+        <!-- Lifetime Volume & Frequency Stats -->
+        <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-neutral-800/80">
+          <div class="p-2.5 rounded-2xl bg-ios-elevated/60">
+            <span class="text-[9px] text-neutral-400 font-bold block uppercase">Lifetime Volume</span>
+            <span class="text-xs font-black text-white font-mono" id="log-lifetime-volume">20,470 kg</span>
+          </div>
+          <div class="p-2.5 rounded-2xl bg-ios-elevated/60">
+            <span class="text-[9px] text-neutral-400 font-bold block uppercase">Total Sets</span>
+            <span class="text-xs font-black text-ios-neon font-mono" id="log-lifetime-sets">42 Sets</span>
+          </div>
+          <div class="p-2.5 rounded-2xl bg-ios-elevated/60">
+            <span class="text-[9px] text-neutral-400 font-bold block uppercase">Avg Duration</span>
+            <span class="text-xs font-black text-ios-orange font-mono">52 min</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chronological List of Previous Day Session Summaries -->
+      <div class="space-y-3" id="session-log-cards-container">
+        <!-- Rendered dynamically via renderDedicatedLogPage() -->
+      </div>
+
+    </main>
+
+    <!-- Tab 5: SUPPLEMENT PROTOCOL HUB -->
+    <main id="tab-supps" class="tab-pane hidden flex-1 p-4 space-y-4 animate-fadeIn">
+      
+      <!-- Supplement Header & Weight Input -->
+      <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase">Evidence-Based Dosage</span>
+            <h2 class="text-sm font-black text-white">Hypertrophy Supplement Matrix</h2>
+          </div>
+          <span class="text-xs font-mono font-bold text-ios-purple">Scientific Timing</span>
+        </div>
+
+        <!-- Body Weight Slider for Dosage Calculation -->
+        <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-neutral-300">Your Body Weight:</span>
+            <span class="font-black text-ios-neon font-mono" id="label-user-weight">78 kg</span>
+          </div>
+          <input type="range" min="45" max="130" value="78" step="1" id="slider-weight" oninput="adjustUserWeight(this.value)" class="w-full accent-ios-neon">
+          <div class="flex justify-between text-[9px] text-neutral-500 font-mono">
+            <span>45 kg</span>
+            <span>Recommended: 2.0g/kg</span>
+            <span>130 kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chrono-Synchronized Supplement Timeline -->
+      <div class="space-y-2.5" id="supplement-timeline-container">
+        <!-- Rendered dynamically with Protein, Creatine, BCAAs, Pre-Workout, Beta-Alanine, and Water -->
+      </div>
+
+    </main>
+
+    <!-- Bottom iOS Floating Glass Tab Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 flex justify-center px-4 pb-2 pointer-events-none">
+      <div class="w-full max-w-md bg-ios-card/95 backdrop-blur-2xl border border-neutral-800/90 rounded-2xl py-1 px-3 flex items-center justify-between shadow-2xl pointer-events-auto relative">
+        
+        <!-- Tab 1: Dashboard -->
+        <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="flex-1 flex flex-col items-center gap-0.5 text-ios-neon transition-all py-0.5">
+          <i class="ph-bold ph-chart-donut text-base"></i>
+          <span class="text-[8.5px] font-bold tracking-tight">Dashboard</span>
+        </button>
+
+        <!-- Tab 2: Setup & Plan -->
+        <button onclick="switchTab('plan')" id="nav-btn-plan" class="flex-1 flex flex-col items-center gap-0.5 text-neutral-400 hover:text-white transition-all py-0.5">
+          <i class="ph-bold ph-calendar-plus text-base"></i>
+          <span class="text-[8.5px] font-bold tracking-tight">Plan</span>
+        </button>
+
+        <!-- Tab 3: Train (Emphasized Center Floating Action Button - Compact) -->
+        <div class="relative -top-3 flex flex-col items-center flex-1">
+          <button onclick="switchTab('train')" id="nav-btn-train" class="w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-500 via-ios-neon to-emerald-300 text-black flex items-center justify-center shadow-glow-green border-2 border-black active:scale-95 transition-transform duration-200 relative group">
+            <!-- Pulsing outer ambient halo -->
+            <span class="absolute inset-0 rounded-full bg-ios-neon animate-ping opacity-25 pointer-events-none"></span>
+            <i class="ph-bold ph-barbell text-xl group-hover:scale-110 transition-transform"></i>
+          </button>
+          <span class="text-[8px] font-black tracking-tight text-white mt-0.5 uppercase">Train</span>
+        </div>
+
+        <!-- Tab 4: Log (Previous Summaries) -->
+        <button onclick="switchTab('log')" id="nav-btn-log" class="flex-1 flex flex-col items-center gap-0.5 text-neutral-400 hover:text-white transition-all py-0.5">
+          <i class="ph-bold ph-clock-counter-clockwise text-base"></i>
+          <span class="text-[8.5px] font-bold tracking-tight">Log</span>
+        </button>
+
+        <!-- Tab 5: Supplements -->
+        <button onclick="switchTab('supps')" id="nav-btn-supps" class="flex-1 flex flex-col items-center gap-0.5 text-neutral-400 hover:text-white transition-all py-0.5">
+          <i class="ph-bold ph-pill text-base"></i>
+          <span class="text-[8.5px] font-bold tracking-tight">Supps</span>
+        </button>
+
+      </div>
+    </nav>
+
+    <!-- Modal 1: Plate Calculator Sheet -->
+    <div id="modal-plate-calculator" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end justify-center">
+      <div class="w-full max-w-md bg-ios-card rounded-t-3xl border-t border-neutral-800 p-5 space-y-4 animate-slideUp">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-scales text-ios-neon text-xl"></i>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider">Olympic Barbell Plate Loader</h3>
+          </div>
+          <button onclick="closePlateCalculatorModal()" class="w-7 h-7 rounded-full bg-ios-elevated flex items-center justify-center text-neutral-400 hover:text-white">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-neutral-400 font-bold">Target Barbell Weight:</span>
+            <span class="font-mono text-base font-black text-ios-neon" id="plate-target-weight-label">70 kg</span>
+          </div>
+          <input type="range" min="20" max="240" step="2.5" value="70" id="slider-plate-target" oninput="updatePlateCalculation(this.value)" class="w-full accent-ios-neon">
+          
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-2">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase block">Required Per Side (20kg Barbell):</span>
+            <div id="plate-badges-container" class="flex flex-wrap gap-1.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: Exercise Form Guide & Execution Sheet -->
+    <div id="modal-form-guide" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end justify-center">
+      <div class="w-full max-w-md bg-ios-card rounded-t-3xl border-t border-neutral-800 p-5 space-y-4 max-h-[85vh] overflow-y-auto animate-slideUp">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-info text-ios-neon text-xl"></i>
+            <h3 class="text-sm font-black text-white" id="form-guide-title">Bench Press Execution</h3>
+          </div>
+          <button onclick="closeFormGuideModal()" class="w-7 h-7 rounded-full bg-ios-elevated flex items-center justify-center text-neutral-400 hover:text-white">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <div id="form-guide-content" class="space-y-4 text-xs">
+          <!-- Dynamic Form Content -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 3: Workout History Logs Viewer Sheet -->
+    <div id="modal-history" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end justify-center">
+      <div class="w-full max-w-md bg-ios-card rounded-t-3xl border-t border-neutral-800 p-5 space-y-4 max-h-[80vh] overflow-y-auto animate-slideUp">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-clock-counter-clockwise text-ios-accent text-xl"></i>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider">Completed Sessions Log</h3>
+          </div>
+          <button onclick="closeWorkoutHistoryModal()" class="w-7 h-7 rounded-full bg-ios-elevated flex items-center justify-center text-neutral-400 hover:text-white">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <div id="history-modal-list" class="space-y-2.5">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 4: Personal Records (PRs) Editor -->
+    <div id="modal-prs" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end justify-center">
+      <div class="w-full max-w-md bg-ios-card rounded-t-3xl border-t border-neutral-800 p-5 space-y-4 animate-slideUp">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-fill ph-trophy text-yellow-400 text-xl"></i>
+            <h3 class="text-sm font-black text-white uppercase tracking-wider">Update 1RM Records</h3>
+          </div>
+          <button onclick="closePRModal()" class="w-7 h-7 rounded-full bg-ios-elevated flex items-center justify-center text-neutral-400 hover:text-white">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-1">
+            <span class="text-neutral-400 font-bold block uppercase text-[10px]">Bench Press (kg)</span>
+            <input type="number" id="input-pr-bench" class="w-full bg-black/60 border border-neutral-700 rounded-xl px-3 py-2 text-white font-mono font-bold focus:outline-none focus:border-ios-neon">
+          </div>
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-1">
+            <span class="text-neutral-400 font-bold block uppercase text-[10px]">Back Squat (kg)</span>
+            <input type="number" id="input-pr-squat" class="w-full bg-black/60 border border-neutral-700 rounded-xl px-3 py-2 text-white font-mono font-bold focus:outline-none focus:border-ios-neon">
+          </div>
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-1">
+            <span class="text-neutral-400 font-bold block uppercase text-[10px]">Deadlift (kg)</span>
+            <input type="number" id="input-pr-deadlift" class="w-full bg-black/60 border border-neutral-700 rounded-xl px-3 py-2 text-white font-mono font-bold focus:outline-none focus:border-ios-neon">
+          </div>
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-1">
+            <span class="text-neutral-400 font-bold block uppercase text-[10px]">Overhead Press (kg)</span>
+            <input type="number" id="input-pr-ohp" class="w-full bg-black/60 border border-neutral-700 rounded-xl px-3 py-2 text-white font-mono font-bold focus:outline-none focus:border-ios-neon">
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <button onclick="savePRUpdates()" class="w-full py-3 rounded-2xl bg-ios-neon text-black font-black text-xs uppercase tracking-wider shadow-glow-green active:scale-98 transition">
+            Save Records
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 5: Per-Day Weekly Plan & Equipment Customizer -->
+    <div id="modal-edit-day" class="fixed inset-0 z-50 modal-backdrop hidden flex items-end justify-center">
+      <div class="w-full max-w-md bg-ios-card rounded-t-3xl border-t border-neutral-800 p-5 space-y-4 max-h-[88vh] overflow-y-auto animate-slideUp">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-pencil-simple text-ios-neon text-xl"></i>
+            <div>
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block" id="edit-day-subtitle">Customizing Day</span>
+              <h3 class="text-sm font-black text-white" id="edit-day-title">Monday • Upper Body Focus</h3>
+            </div>
+          </div>
+          <button onclick="closeEditDayModal()" class="w-7 h-7 rounded-full bg-ios-elevated flex items-center justify-center text-neutral-400 hover:text-white">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+
+        <!-- Rest Day Toggle -->
+        <div class="flex items-center justify-between p-3 rounded-2xl bg-ios-elevated/60 border border-neutral-800">
+          <div>
+            <span class="text-xs font-bold text-white block">Rest & Recovery Day</span>
+            <span class="text-[10px] text-neutral-400">Mark this day as complete muscle rest</span>
+          </div>
+          <button onclick="toggleDayRestStatus()" id="btn-toggle-day-rest" class="px-3 py-1.5 rounded-xl bg-neutral-800 border border-neutral-700 text-xs font-bold text-neutral-300 transition">
+            Set to Rest
+          </button>
+        </div>
+
+        <!-- Session Time for this Day -->
+        <div id="edit-day-time-section" class="p-3 rounded-2xl bg-ios-elevated/60 border border-neutral-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <i class="ph-bold ph-alarm text-ios-orange text-base"></i>
+              <span class="text-xs font-bold text-white">Workout Time</span>
+            </div>
+            <span class="text-[10px] text-neutral-400 font-mono">Syncs Supplement Alerts</span>
+          </div>
+          <input type="time" id="edit-day-time-input" onchange="updateDayTime(this.value)" class="w-full bg-black/60 border border-neutral-700 rounded-xl px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-ios-neon">
+        </div>
+
+        <!-- Muscle Selection for this Day -->
+        <div id="edit-day-muscles-section" class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Target Muscles for this Day</span>
+            <span class="text-[10px] text-ios-neon font-mono font-bold" id="edit-day-muscle-count">3 selected</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5" id="edit-day-muscle-pills">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Equipment Available for this Day's Session -->
+        <div id="edit-day-equipment-section" class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Equipment Available for this Day</span>
+            <span class="text-[10px] text-ios-accent font-mono font-bold" id="edit-day-equip-count">5 active</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5" id="edit-day-equip-pills">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Action CTAs -->
+        <div class="pt-2 space-y-2">
+          <button onclick="applyAndLaunchDaySession()" class="w-full py-3 rounded-2xl bg-ios-neon text-black font-black text-xs uppercase tracking-wider shadow-glow-green active:scale-98 transition flex items-center justify-center gap-1.5">
+            <i class="ph-bold ph-play-circle text-base"></i> Load & Start This Day's Session
+          </button>
+          <button onclick="saveDayEdits()" class="w-full py-2.5 rounded-2xl bg-ios-elevated border border-neutral-700 text-neutral-300 font-bold text-xs hover:text-white active:scale-98 transition">
+            Save Changes for Week
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- In-App Notification Toast Box (No alerts) -->
+    <div id="toast-box" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-ios-card/95 backdrop-blur-xl border border-neutral-700 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 max-w-xs text-center">
+      <i id="toast-icon" class="ph-bold ph-check text-ios-neon text-base"></i>
+      <span id="toast-message" class="text-xs font-bold text-white tracking-tight">Workout Saved</span>
+    </div>
+
+  </div>
+
+  <!-- APPLICATION LOGIC & DATA ENGINES -->
+  <script>
+    /* =========================================================
+       1. CONSTANTS & HYPERTROPHY EXERCISE CATALOG
+       ========================================================= */
+    const DEFAULT_EQUIPMENT = [
+      { id: 'barbell', name: 'Barbell', icon: 'ph-barbell' },
+      { id: 'dumbbell', name: 'Dumbbells', icon: 'ph-barbell' },
+      { id: 'cables', name: 'Cable Machine', icon: 'ph-arrows-left-right' },
+      { id: 'bench', name: 'Adjustable Bench', icon: 'ph-armchair' },
+      { id: 'pullup', name: 'Pull-up Bar', icon: 'ph-hand' },
+      { id: 'smith', name: 'Smith Machine', icon: 'ph-rows' },
+      { id: 'legpress', name: 'Leg Press Sled', icon: 'ph-arrows-out-cardinal' },
+      { id: 'kettlebell', name: 'Kettlebells', icon: 'ph-circle-dashed' },
+      { id: 'bands', name: 'Resistance Bands', icon: 'ph-infinity' },
+      { id: 'hexbar', name: 'Trap / Hex Bar', icon: 'ph-polygon' },
+      { id: 'bodyweight', name: 'Bodyweight', icon: 'ph-person-simple' }
+    ];
+
+    const DEFAULT_MUSCLES = [
+      { id: 'chest', name: 'Chest (Pectorals)', view: 'front' },
+      { id: 'back', name: 'Back & Lats', view: 'back' },
+      { id: 'shoulders', name: 'Deltoids', view: 'front' },
+      { id: 'biceps', name: 'Biceps Brachii', view: 'front' },
+      { id: 'triceps', name: 'Triceps Brachii', view: 'back' },
+      { id: 'quads', name: 'Quadriceps', view: 'front' },
+      { id: 'hamstrings', name: 'Hamstrings', view: 'back' },
+      { id: 'glutes', name: 'Gluteus Max', view: 'back' },
+      { id: 'calves', name: 'Calves (Soleus)', view: 'back' },
+      { id: 'core', name: 'Abs & Core', view: 'front' }
+    ];
+
+    const EXERCISE_CATALOG = [
+      // CHEST
+      { id: 'bench_press', name: 'Barbell Bench Press', muscle: 'chest', equipment: ['barbell', 'bench'], compound: true, targetReps: '6-8', tip: 'Pull your shoulder blades back and down into the bench. Lower the bar smoothly to your lower chest, pause briefly, and press back up without bouncing.' },
+      { id: 'db_incline_press', name: 'Incline Dumbbell Press', muscle: 'chest', equipment: ['dumbbell', 'bench'], compound: true, targetReps: '8-10', tip: 'Set the bench to a slight incline. Lower the weights slowly until your chest gets a good stretch, then push straight up without banging them together.' },
+      { id: 'cable_crossover', name: 'Cable Mid-Chest Flye', muscle: 'chest', equipment: ['cables'], compound: false, targetReps: '12-15', tip: 'Keep a slight, soft bend in your elbows. Open your arms wide to feel a chest stretch, then bring your hands together in front like hugging a big tree.' },
+      { id: 'smith_incline_press', name: 'Smith Machine Incline Press', muscle: 'chest', equipment: ['smith', 'bench'], compound: true, targetReps: '8-10', tip: 'Lie back on an incline bench under the bar. Lower the bar slowly to your upper chest, touch gently, and push straight up.' },
+      
+      // BACK
+      { id: 'barbell_row', name: 'Bent-Over Barbell Row', muscle: 'back', equipment: ['barbell'], compound: true, targetReps: '6-8', tip: 'Bend forward at your hips with a flat back. Pull the bar up toward your belly button by driving your elbows back behind you.' },
+      { id: 'lat_pulldown', name: 'Neutral-Grip Lat Pulldown', muscle: 'back', equipment: ['cables'], compound: true, targetReps: '8-12', tip: 'Sit tall and pull the handle down to your collarbone by driving your elbows down toward your sides. Squeeze your back, then let your arms fully stretch back up.' },
+      { id: 'chest_supported_db_row', name: 'Chest-Supported DB Row', muscle: 'back', equipment: ['dumbbell', 'bench'], compound: true, targetReps: '10-12', tip: 'Rest your chest on an angled bench. Pull the dumbbells up by leading with your elbows, squeeze your back for a second, then lower slowly.' },
+      { id: 'pullups', name: 'Strict Bodyweight Pull-Ups', muscle: 'back', equipment: ['pullup', 'bodyweight'], compound: true, targetReps: '6-10', tip: 'Hang with straight arms, then pull your chest up toward the bar without swinging your legs. Lower yourself back down with full control.' },
+
+      // SHOULDERS
+      { id: 'overhead_press', name: 'Standing Barbell Overhead Press', muscle: 'shoulders', equipment: ['barbell'], compound: true, targetReps: '5-8', tip: 'Stand tall with your abs and glutes squeezed tight. Press the bar straight up over your head until your arms are straight, then lower it back to your collarbone.' },
+      { id: 'db_lateral_raise', name: 'Lean-Away Dumbbell Lateral Raise', muscle: 'shoulders', equipment: ['dumbbell'], compound: false, targetReps: '12-15', tip: 'Hold light dumbbells and lift your arms out to your sides until they reach shoulder height. Think about pouring water from two jugs, then lower slowly.' },
+      { id: 'cable_lateral_raise', name: 'Behind-The-Back Cable Lateral Raise', muscle: 'shoulders', equipment: ['cables'], compound: false, targetReps: '12-15', tip: 'Stand next to the low cable. Lift your arm up and out to the side until level with your shoulder, pause for a moment, and lower smoothly.' },
+
+      // ARMS
+      { id: 'incline_db_curl', name: 'Incline Dumbbell Biceps Curl', muscle: 'biceps', equipment: ['dumbbell', 'bench'], compound: false, targetReps: '10-12', tip: 'Sit back on an angled bench with your arms hanging down. Curl the weights up while keeping your elbows pointed at the floor, then lower slowly for a deep arm stretch.' },
+      { id: 'cable_curl', name: 'Cable Straight-Bar Curl', muscle: 'biceps', equipment: ['cables'], compound: false, targetReps: '10-12', tip: 'Stand tall with elbows pinned to your sides. Curl the bar up toward your shoulders, squeeze your biceps hard at the top, and lower with control.' },
+      { id: 'skull_crushers', name: 'Barbell Lying Triceps Extension', muscle: 'triceps', equipment: ['barbell', 'bench'], compound: false, targetReps: '10-12', tip: 'Lie flat on the bench holding the bar above your eyes. Bend only your elbows to lower the bar just behind the top of your head, then straighten your arms back up.' },
+      { id: 'cable_tricep_pushdown', name: 'Cable Rope Triceps Pushdown', muscle: 'triceps', equipment: ['cables'], compound: false, targetReps: '12-15', tip: 'Keep your elbows tucked into your sides. Push the rope all the way down until your arms are straight, pull the rope ends apart, and squeeze the back of your arms.' },
+
+      // LEGS & LOWER BODY
+      { id: 'barbell_squat', name: 'Barbell Back Squat', muscle: 'quads', equipment: ['barbell'], compound: true, targetReps: '6-8', tip: 'Rest the bar across your upper back. Sit your hips back and down like sitting into a low chair, keep your chest up, and push through your whole foot to stand back up.' },
+      { id: 'leg_press', name: 'Incline Leg Press Sled', muscle: 'quads', equipment: ['legpress'], compound: true, targetReps: '10-12', tip: 'Place your feet flat on the sled, shoulder-width apart. Lower the weight slowly until your knees are bent at 90 degrees, then press back up without snapping your knees straight.' },
+      { id: 'romanian_deadlift', name: 'Barbell Romanian Deadlift (RDL)', muscle: 'hamstrings', equipment: ['barbell'], compound: true, targetReps: '8-10', tip: 'Keep a slight bend in your knees and push your hips straight back like trying to touch a wall behind you. Lower the bar just past your knees until you feel the back of your thighs stretch, then stand back up.' },
+      { id: 'db_bulgarian_split_squat', name: 'Bulgarian Split Squat', muscle: 'quads', equipment: ['dumbbell', 'bench'], compound: true, targetReps: '8-10', tip: 'Rest one foot on a bench behind you. Lower your back knee toward the floor under control, then push through your front heel to stand up.' },
+      { id: 'standing_calf_raise', name: 'Single-Leg Dumbbell Calf Raise', muscle: 'calves', equipment: ['dumbbell'], compound: false, targetReps: '12-15', tip: 'Step on a ledge with your heel hanging off. Drop your heel down for a 2-second stretch, then push up high onto your toes and pause at the top.' },
+      { id: 'hanging_leg_raise', name: 'Hanging Straight Leg Raise', muscle: 'core', equipment: ['pullup', 'bodyweight'], compound: false, targetReps: '12-15', tip: 'Hang from the bar without swinging. Curl your knees or straight legs up toward your chest using your abs, hold for a moment, and lower slowly.' }
+    ];
+
+    /* =========================================================
+       2. APPLICATION STATE (WITH LOCALSTORAGE PERSISTENCE)
+       ========================================================= */
+    const STORAGE_KEY = 'IRONPULSE_APP_STATE_V3';
+
+    let appState = {
+      bodyWeightKg: 78,
+      proteinLogged: 120,
+      supplementsTaken: { protein: true, creatine: true, bcaa: true, preworkout: false },
+      workoutTime: '18:00',
+      scheduledDate: new Date().toISOString().split('T')[0],
+      splitFrequency: 4,
+      supersetMode: false,
+      availableEquipment: ['barbell', 'dumbbell', 'cables', 'bench', 'pullup', 'smith', 'legpress', 'bodyweight'],
+      selectedMuscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
+      weeklyPlan: null, // Initialized with companion suggestions
+      lastUsedExerciseIds: [],
+      exerciseBaselines: {
+        bench_press: { workingWeight: 65, lastReps: 8, lastRir: 2, date: 'Baseline' },
+        barbell_squat: { workingWeight: 85, lastReps: 8, lastRir: 2, date: 'Baseline' },
+        barbell_row: { workingWeight: 60, lastReps: 8, lastRir: 2, date: 'Baseline' },
+        overhead_press: { workingWeight: 42.5, lastReps: 8, lastRir: 2, date: 'Baseline' },
+        lat_pulldown: { workingWeight: 55, lastReps: 10, lastRir: 2, date: 'Baseline' },
+        romanian_deadlift: { workingWeight: 75, lastReps: 8, lastRir: 2, date: 'Baseline' }
+      },
+      currentSession: null,
+      workoutHistory: [
+        { 
+          id: 'h1', 
+          date: 'Yesterday • 18:15', 
+          title: 'Upper Body Hypertrophy', 
+          volume: 6420, 
+          sets: 14, 
+          duration: '52m',
+          muscles: ['chest', 'back', 'shoulders'],
+          details: [
+            { name: 'Barbell Bench Press', sets: '3 sets (65 kg × 8r, 65 kg × 8r, 65 kg × 8r)' },
+            { name: 'Bent-Over Barbell Row', sets: '3 sets (60 kg × 8r, 60 kg × 8r, 60 kg × 8r)' },
+            { name: 'Lean-Away DB Lateral Raise', sets: '4 sets (10 kg × 15r)' },
+            { name: 'Neutral-Grip Lat Pulldown', sets: '4 sets (55 kg × 10r)' }
+          ]
+        },
+        { 
+          id: 'h2', 
+          date: '3 Days Ago • 17:45', 
+          title: 'Lower Body & Posterior Chain', 
+          volume: 8150, 
+          sets: 16, 
+          duration: '60m',
+          muscles: ['quads', 'hamstrings', 'calves'],
+          details: [
+            { name: 'Barbell Back Squat', sets: '4 sets (85 kg × 8r)' },
+            { name: 'Romanian Deadlift (RDL)', sets: '4 sets (75 kg × 8r)' },
+            { name: 'Incline Leg Press Sled', sets: '4 sets (140 kg × 12r)' },
+            { name: 'Single-Leg DB Calf Raise', sets: '4 sets (20 kg × 15r)' }
+          ]
+        },
+        { 
+          id: 'h3', 
+          date: '5 Days Ago • 18:00', 
+          title: 'Push Hypertrophy', 
+          volume: 5900, 
+          sets: 12, 
+          duration: '46m',
+          muscles: ['chest', 'shoulders', 'triceps'],
+          details: [
+            { name: 'Incline Dumbbell Press', sets: '4 sets (26 kg × 10r)' },
+            { name: 'Cable Rope Triceps Pushdown', sets: '4 sets (25 kg × 12r)' },
+            { name: 'Behind-The-Back Cable Lateral Raise', sets: '4 sets (7.5 kg × 15r)' }
+          ]
+        }
+      ],
+      weeklyMuscleSets: {
+        chest: 14,
+        back: 16,
+        shoulders: 12,
+        biceps: 10,
+        triceps: 10,
+        quads: 14,
+        hamstrings: 10,
+        calves: 8,
+        core: 6
+      },
+      personalRecords: {
+        bench: 105,
+        squat: 145,
+        deadlift: 180,
+        ohp: 70
+      },
+      timeframe: 'daily',
+      loggedSets: {}
+    };
+
+    let selectedPlannerDayIndex = 0; // Tracks which day card is currently selected in the 7-day planner
+
+    function getDefaultWeeklySuggestions(freq = 4) {
+      if (freq === 3) {
+        return [
+          { day: 'Mon', title: 'Full Body A', isRest: false, time: '18:00', muscles: ['chest', 'back', 'quads'], equipment: [...appState.availableEquipment] },
+          { day: 'Tue', title: 'Rest & Recovery', isRest: true, time: '18:00', muscles: [], equipment: [] },
+          { day: 'Wed', title: 'Full Body B', isRest: false, time: '18:00', muscles: ['shoulders', 'hamstrings', 'biceps', 'triceps'], equipment: [...appState.availableEquipment] },
+          { day: 'Thu', title: 'Rest & Recovery', isRest: true, time: '18:00', muscles: [], equipment: [] },
+          { day: 'Fri', title: 'Full Body A', isRest: false, time: '17:30', muscles: ['chest', 'back', 'quads', 'core'], equipment: [...appState.availableEquipment] },
+          { day: 'Sat', title: 'Active Recovery', isRest: true, time: '10:00', muscles: [], equipment: [] },
+          { day: 'Sun', title: 'Rest & Fuel', isRest: true, time: '18:00', muscles: [], equipment: [] }
+        ];
+      } else if (freq === 5) {
+        return [
+          { day: 'Mon', title: 'Push Hypertrophy', isRest: false, time: '18:00', muscles: ['chest', 'shoulders', 'triceps'], equipment: [...appState.availableEquipment] },
+          { day: 'Tue', title: 'Pull & Lats', isRest: false, time: '18:00', muscles: ['back', 'biceps'], equipment: [...appState.availableEquipment] },
+          { day: 'Wed', title: 'Legs & Quads Focus', isRest: false, time: '18:00', muscles: ['quads', 'calves', 'core'], equipment: [...appState.availableEquipment] },
+          { day: 'Thu', title: 'Upper Body Pump', isRest: false, time: '18:00', muscles: ['chest', 'back', 'shoulders'], equipment: [...appState.availableEquipment] },
+          { day: 'Fri', title: 'Posterior & Hamstrings', isRest: false, time: '17:30', muscles: ['hamstrings', 'glutes', 'calves'], equipment: [...appState.availableEquipment] },
+          { day: 'Sat', title: 'Active Recovery', isRest: true, time: '10:00', muscles: [], equipment: [] },
+          { day: 'Sun', title: 'Rest & Prep', isRest: true, time: '18:00', muscles: [], equipment: [] }
+        ];
+      } else {
+        // Default 4-Day Upper / Lower
+        return [
+          { day: 'Mon', title: 'Upper Body Power', isRest: false, time: '18:00', muscles: ['chest', 'back', 'shoulders'], equipment: [...appState.availableEquipment] },
+          { day: 'Tue', title: 'Lower Body & Core', isRest: false, time: '18:00', muscles: ['quads', 'hamstrings', 'calves'], equipment: [...appState.availableEquipment] },
+          { day: 'Wed', title: 'Mid-Week Rest', isRest: true, time: '18:00', muscles: [], equipment: [] },
+          { day: 'Thu', title: 'Upper Hypertrophy & Arms', isRest: false, time: '18:00', muscles: ['chest', 'back', 'biceps', 'triceps'], equipment: [...appState.availableEquipment] },
+          { day: 'Fri', title: 'Lower Posterior Chain', isRest: false, time: '17:30', muscles: ['hamstrings', 'glutes', 'quads', 'core'], equipment: [...appState.availableEquipment] },
+          { day: 'Sat', title: 'Active Recovery', isRest: true, time: '10:00', muscles: [], equipment: [] },
+          { day: 'Sun', title: 'Rest & Fuel', isRest: true, time: '18:00', muscles: [], equipment: [] }
+        ];
+      }
+    }
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          appState = { ...appState, ...parsed };
+        }
+      } catch (err) {
+        console.warn('Could not read state, starting defaults', err);
+      }
+      if (!appState.weeklyPlan || !Array.isArray(appState.weeklyPlan) || appState.weeklyPlan.length !== 7) {
+        appState.weeklyPlan = getDefaultWeeklySuggestions(appState.splitFrequency || 4);
+      }
+
+      // Ensure every plan day has a designated time
+      appState.weeklyPlan.forEach(d => {
+        if (!d.time) d.time = appState.workoutTime || '18:00';
+      });
+
+      // Default the selected day to today's index in the week (0 = Sun, 1 = Mon, etc.)
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const todayDayStr = daysOfWeek[new Date().getDay()];
+      const todayIdx = appState.weeklyPlan.findIndex(d => d.day.toLowerCase() === todayDayStr.toLowerCase());
+      selectedPlannerDayIndex = todayIdx >= 0 ? todayIdx : 0;
+      
+      // Sync active workout time to today's scheduled time
+      if (appState.weeklyPlan[selectedPlannerDayIndex]) {
+        appState.workoutTime = appState.weeklyPlan[selectedPlannerDayIndex].time || '18:00';
+      }
+    }
+
+    loadSavedState();
+
+    /* =========================================================
+       3. TONE.JS AUDIO & HAPTIC SYNTHESIS
+       ========================================================= */
+    let synth = null;
+    function playBeep(type = 'tap') {
+      try {
+        if (!synth) {
+          synth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+          }).toDestination();
+          synth.volume.value = -12;
+        }
+        if (Tone.context.state !== 'running') {
+          Tone.start();
+        }
+        if (type === 'tap') synth.triggerAttackRelease('C5', '32n');
+        else if (type === 'complete') synth.triggerAttackRelease(['E5', 'G5'], '16n');
+        else if (type === 'timer_done') synth.triggerAttackRelease(['A5', 'C6', 'E6'], '8n');
+        else if (type === 'alert') synth.triggerAttackRelease('D5', '16n');
+      } catch (e) {
+        // Fallback gracefully if audio context is blocked
+      }
+    }
+
+    /* =========================================================
+       4. NAVIGATION & TAB SWITCHING
+       ========================================================= */
+    function switchTab(tabId) {
+      playBeep('tap');
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('nav button').forEach(el => {
+        el.classList.remove('text-ios-neon');
+        el.classList.add('text-neutral-400');
+      });
+
+      const pane = document.getElementById(`tab-pane-${tabId}`) || document.getElementById(`tab-${tabId}`);
+      if (pane) pane.classList.remove('hidden');
+
+      const navBtn = document.getElementById(`nav-btn-${tabId}`);
+      if (navBtn) {
+        if (tabId === 'train') {
+          // Keep floating green button styling intact
+          navBtn.classList.remove('text-neutral-400');
+        } else {
+          navBtn.classList.remove('text-neutral-400');
+          navBtn.classList.add('text-ios-neon');
+        }
+      }
+
+      if (tabId === 'train') {
+        ensureTodayWorkoutSuggested();
+      }
+
+      if (tabId === 'log') {
+        renderDedicatedLogPage();
+      }
+
+      if (tabId === 'dashboard') {
+        renderVolumeChart();
+      }
+    }
+
+    /* =========================================================
+       5. CLOCK & TOAST UTILITIES
+       ========================================================= */
+    function initClock() {
+      function update() {
+        const d = new Date();
+        const hrs = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const el = document.getElementById('clock-time');
+        if (el) el.textContent = `${hrs}:${mins}`;
+      }
+      update();
+      setInterval(update, 10000);
+    }
+
+    let toastTimeout = null;
+    function showToast(msg, icon = 'ph-check') {
+      const box = document.getElementById('toast-box');
+      const text = document.getElementById('toast-message');
+      const ico = document.getElementById('toast-icon');
+      if (!box) return;
+
+      text.textContent = msg;
+      ico.className = `ph-bold ${icon} text-ios-neon text-base`;
+      box.classList.remove('opacity-0', 'pointer-events-none');
+      box.classList.add('opacity-100');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        box.classList.add('opacity-0', 'pointer-events-none');
+        box.classList.remove('opacity-100');
+      }, 2400);
+    }
+
+    /* =========================================================
+       6. BODY MAP & EQUIPMENT SETUP
+       ========================================================= */
+    let currentMapView = 'front';
+
+    function setBodyMapView(view) {
+      playBeep('tap');
+      currentMapView = view;
+      const frontGroup = document.getElementById('svg-front-view');
+      const backGroup = document.getElementById('svg-back-view');
+      const btnF = document.getElementById('btn-view-front');
+      const btnB = document.getElementById('btn-view-back');
+
+      if (view === 'front') {
+        frontGroup.classList.remove('hidden');
+        backGroup.classList.add('hidden');
+        btnF.classList.add('bg-ios-elevated', 'text-white');
+        btnF.classList.remove('text-neutral-400');
+        btnB.classList.remove('bg-ios-elevated', 'text-white');
+        btnB.classList.add('text-neutral-400');
+      } else {
+        frontGroup.classList.add('hidden');
+        backGroup.classList.remove('hidden');
+        btnB.classList.add('bg-ios-elevated', 'text-white');
+        btnB.classList.remove('text-neutral-400');
+        btnF.classList.remove('bg-ios-elevated', 'text-white');
+        btnF.classList.add('text-neutral-400');
+      }
+      syncBodyMapHighlights();
+    }
+
+    function toggleMuscleFromMap(muscleId) {
+      playBeep('tap');
+      // If editing a selected planner day, update that day directly
+      const currentPlanDay = appState.weeklyPlan && appState.weeklyPlan[selectedPlannerDayIndex];
+      if (currentPlanDay && !currentPlanDay.isRest) {
+        if (!currentPlanDay.muscles) currentPlanDay.muscles = [];
+        const idx = currentPlanDay.muscles.indexOf(muscleId);
+        if (idx >= 0) {
+          if (currentPlanDay.muscles.length > 1) {
+            currentPlanDay.muscles.splice(idx, 1);
+          } else {
+            showToast('Keep at least 1 muscle selected', 'ph-warning');
+            return;
+          }
+        } else {
+          currentPlanDay.muscles.push(muscleId);
+        }
+        appState.selectedMuscles = [...currentPlanDay.muscles];
+      } else {
+        const idx = appState.selectedMuscles.indexOf(muscleId);
+        if (idx >= 0) {
+          if (appState.selectedMuscles.length > 1) {
+            appState.selectedMuscles.splice(idx, 1);
+          } else {
+            showToast('Keep at least 1 muscle selected', 'ph-warning');
+            return;
+          }
+        } else {
+          appState.selectedMuscles.push(muscleId);
+        }
+      }
+
+      saveState();
+      renderWeeklyPlanCards();
+      renderSetupTiles();
+      syncBodyMapHighlights();
+    }
+
+    function syncBodyMapHighlights() {
+      const allPaths = document.querySelectorAll('.muscle-path');
+      allPaths.forEach(p => p.classList.remove('active'));
+
+      const activeMuscles = (appState.weeklyPlan && appState.weeklyPlan[selectedPlannerDayIndex] && !appState.weeklyPlan[selectedPlannerDayIndex].isRest) 
+        ? appState.weeklyPlan[selectedPlannerDayIndex].muscles 
+        : appState.selectedMuscles;
+
+      (activeMuscles || []).forEach(m => {
+        if (m === 'chest') document.getElementById('path-chest')?.classList.add('active');
+        if (m === 'shoulders') {
+          document.getElementById('path-shoulders-left')?.classList.add('active');
+          document.getElementById('path-shoulders-right')?.classList.add('active');
+          document.getElementById('path-rear-delts-left')?.classList.add('active');
+          document.getElementById('path-rear-delts-right')?.classList.add('active');
+        }
+        if (m === 'biceps') {
+          document.getElementById('path-biceps-left')?.classList.add('active');
+          document.getElementById('path-biceps-right')?.classList.add('active');
+        }
+        if (m === 'triceps') {
+          document.getElementById('path-triceps-left')?.classList.add('active');
+          document.getElementById('path-triceps-right')?.classList.add('active');
+        }
+        if (m === 'core') document.getElementById('path-core')?.classList.add('active');
+        if (m === 'back') document.getElementById('path-back')?.classList.add('active');
+        if (m === 'glutes') document.getElementById('path-glutes')?.classList.add('active');
+        if (m === 'hamstrings') {
+          document.getElementById('path-hamstrings-left')?.classList.add('active');
+          document.getElementById('path-hamstrings-right')?.classList.add('active');
+        }
+        if (m === 'quads') {
+          document.getElementById('path-quads-left')?.classList.add('active');
+          document.getElementById('path-quads-right')?.classList.add('active');
+        }
+        if (m === 'calves') {
+          document.getElementById('path-calves-front-left')?.classList.add('active');
+          document.getElementById('path-calves-front-right')?.classList.add('active');
+          document.getElementById('path-calves-back-left')?.classList.add('active');
+          document.getElementById('path-calves-back-right')?.classList.add('active');
+        }
+      });
+    }
+
+    function renderSetupTiles() {
+      const activePlanDay = appState.weeklyPlan && appState.weeklyPlan[selectedPlannerDayIndex];
+      const activeMuscles = (activePlanDay && !activePlanDay.isRest && activePlanDay.muscles) 
+        ? activePlanDay.muscles 
+        : appState.selectedMuscles;
+
+      const activeEquip = (activePlanDay && !activePlanDay.isRest && activePlanDay.equipment) 
+        ? activePlanDay.equipment 
+        : appState.availableEquipment;
+
+      // Muscle Tiles Grid
+      const mContainer = document.getElementById('muscle-tiles-grid');
+      if (mContainer) {
+        mContainer.innerHTML = DEFAULT_MUSCLES.map(m => {
+          const isSelected = activeMuscles.includes(m.id);
+          return `
+            <div onclick="toggleMuscleFromMap('${m.id}')" class="p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'bg-ios-neon/15 border-ios-neon text-white shadow-glow-green' : 'bg-ios-card border-neutral-800 text-neutral-400 hover:text-white'}">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-ios-neon' : 'bg-neutral-600'}"></span>
+                <span class="text-xs font-bold">${m.name}</span>
+              </div>
+              <i class="ph-bold ${isSelected ? 'ph-check-circle text-ios-neon' : 'ph-plus-circle text-neutral-600'}"></i>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Equipment Tiles Grid
+      const eqContainer = document.getElementById('equipment-tiles-grid');
+      if (eqContainer) {
+        eqContainer.innerHTML = DEFAULT_EQUIPMENT.map(eq => {
+          const isSelected = activeEquip.includes(eq.id);
+          return `
+            <div onclick="toggleEquipment('${eq.id}')" class="p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'bg-ios-accent/15 border-ios-accent text-white shadow-glow-blue' : 'bg-ios-card border-neutral-800 text-neutral-400 hover:text-white'}">
+              <div class="flex items-center gap-2">
+                <i class="ph-bold ${eq.icon} text-base ${isSelected ? 'text-ios-accent' : 'text-neutral-500'}"></i>
+                <span class="text-xs font-bold">${eq.name}</span>
+              </div>
+              <i class="ph-bold ${isSelected ? 'ph-check text-ios-accent' : 'ph-plus text-neutral-600'}"></i>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const anatLabel = document.getElementById('anatomy-day-label');
+      if (anatLabel && activePlanDay) {
+        anatLabel.textContent = `${activePlanDay.day} ${activePlanDay.isRest ? '(Rest)' : ''}`;
+      }
+
+      syncBodyMapHighlights();
+    }
+
+    function toggleEquipment(eqId) {
+      playBeep('tap');
+      const currentPlanDay = appState.weeklyPlan && appState.weeklyPlan[selectedPlannerDayIndex];
+      if (currentPlanDay && !currentPlanDay.isRest) {
+        if (!currentPlanDay.equipment) currentPlanDay.equipment = [];
+        const idx = currentPlanDay.equipment.indexOf(eqId);
+        if (idx >= 0) {
+          if (currentPlanDay.equipment.length > 1) {
+            currentPlanDay.equipment.splice(idx, 1);
+          } else {
+            showToast('Keep at least 1 equipment type', 'ph-warning');
+            return;
+          }
+        } else {
+          currentPlanDay.equipment.push(eqId);
+        }
+        appState.availableEquipment = [...currentPlanDay.equipment];
+      } else {
+        const idx = appState.availableEquipment.indexOf(eqId);
+        if (idx >= 0) {
+          if (appState.availableEquipment.length > 1) {
+            appState.availableEquipment.splice(idx, 1);
+          } else {
+            showToast('Keep at least 1 equipment type', 'ph-warning');
+            return;
+          }
+        } else {
+          appState.availableEquipment.push(eqId);
+        }
+      }
+
+      saveState();
+      renderWeeklyPlanCards();
+      renderSetupTiles();
+    }
+
+    function selectSplitFrequency(num) {
+      playBeep('tap');
+      appState.splitFrequency = num;
+      document.querySelectorAll('#btn-split-3, #btn-split-4, #btn-split-5').forEach(b => {
+        b.className = 'py-2.5 rounded-xl border border-neutral-700 bg-ios-elevated text-xs font-bold text-neutral-300 hover:text-white transition';
+      });
+
+      const activeBtn = document.getElementById(`btn-split-${num}`);
+      if (activeBtn) {
+        activeBtn.className = 'py-2.5 rounded-xl border border-ios-neon bg-ios-neon/15 text-xs font-bold text-ios-neon transition shadow-glow-green';
+      }
+
+      const label = document.getElementById('split-name-label');
+      if (label) {
+        if (num === 3) label.textContent = '3-Day Full Body';
+        if (num === 4) label.textContent = '4-Day Upper / Lower';
+        if (num === 5) label.textContent = '5-6 Day PPL';
+      }
+
+      appState.weeklyPlan = getDefaultWeeklySuggestions(num);
+      saveState();
+      renderWeeklyPlanCards();
+      updateDashboardSessionSummary();
+      showToast(`Switched to ${num}-Day Architecture & updated suggestions`);
+    }
+
+    function resetWeeklyPlanToDefault() {
+      playBeep('tap');
+      appState.weeklyPlan = getDefaultWeeklySuggestions(appState.splitFrequency || 4);
+      saveState();
+      renderWeeklyPlanCards();
+      showToast('Weekly suggestions reset to default split');
+    }
+
+    /* =========================================================
+       6B. WEEKLY PLANNER SUGGESTIONS & PER-DAY CUSTOMIZER
+       ========================================================= */
+    let currentlyEditingDayIndex = null;
+
+    function selectPlannerDay(dayIndex) {
+      playBeep('tap');
+      selectedPlannerDayIndex = dayIndex;
+      const dayData = appState.weeklyPlan[dayIndex];
+      if (dayData && !dayData.isRest) {
+        appState.selectedMuscles = [...(dayData.muscles || [])];
+        appState.availableEquipment = [...(dayData.equipment || appState.availableEquipment)];
+        if (dayData.time) {
+          appState.workoutTime = dayData.time;
+          recalculateSupplements();
+        }
+      }
+      saveState();
+      renderWeeklyPlanCards();
+      renderSetupTiles();
+      updateSelectedDayBanner();
+      updateDashboardSessionSummary();
+    }
+
+    function updateSelectedDayBanner() {
+      const banner = document.getElementById('planner-selected-banner');
+      const label = document.getElementById('selected-day-banner-label');
+      const title = document.getElementById('selected-day-banner-title');
+      const restBtn = document.getElementById('btn-selected-day-rest');
+      if (!banner || !appState.weeklyPlan) return;
+
+      const dayData = appState.weeklyPlan[selectedPlannerDayIndex];
+      if (!dayData) return;
+
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const isToday = dayData.day.toLowerCase() === daysOfWeek[new Date().getDay()].toLowerCase();
+
+      if (label) label.textContent = isToday ? 'TODAY (Active Schedule)' : `Selected Day (${dayData.day})`;
+      if (title) title.textContent = `${dayData.day} • ${dayData.title}`;
+
+      if (restBtn) {
+        if (dayData.isRest) {
+          restBtn.textContent = 'Set as Active Workout';
+          restBtn.className = 'px-2.5 py-1 rounded-xl bg-ios-neon/20 border border-ios-neon text-[10px] font-bold text-ios-neon hover:bg-ios-neon hover:text-black transition';
+        } else {
+          restBtn.textContent = 'Mark Rest';
+          restBtn.className = 'px-2.5 py-1 rounded-xl bg-neutral-800 text-[10px] font-bold text-neutral-300 hover:text-white transition';
+        }
+      }
+    }
+
+    function toggleSelectedDayRest() {
+      playBeep('tap');
+      const dayData = appState.weeklyPlan[selectedPlannerDayIndex];
+      if (!dayData) return;
+      dayData.isRest = !dayData.isRest;
+      if (dayData.isRest) {
+        dayData.title = 'Rest & Recovery';
+      } else {
+        dayData.title = 'Custom Workout';
+        if (!dayData.muscles || dayData.muscles.length === 0) dayData.muscles = ['chest', 'back'];
+        if (!dayData.equipment || dayData.equipment.length === 0) dayData.equipment = [...appState.availableEquipment];
+        appState.selectedMuscles = [...dayData.muscles];
+      }
+      saveState();
+      renderWeeklyPlanCards();
+      renderSetupTiles();
+      updateSelectedDayBanner();
+      showToast(`${dayData.day} updated to ${dayData.isRest ? 'Rest' : 'Workout'}`);
+    }
+
+    function launchSelectedDayIntoTrain() {
+      const dayData = appState.weeklyPlan[selectedPlannerDayIndex];
+      if (!dayData) return;
+      if (dayData.isRest) {
+        showToast(`${dayData.day} is marked as Rest & Recovery`, 'ph-warning');
+        return;
+      }
+      applyAndLaunchDaySession(selectedPlannerDayIndex);
+    }
+
+    function renderWeeklyPlanCards() {
+      const container = document.getElementById('weekly-plan-cards-container');
+      if (!container || !appState.weeklyPlan) return;
+
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const todayDayStr = daysOfWeek[new Date().getDay()];
+
+      container.innerHTML = appState.weeklyPlan.map((planDay, idx) => {
+        const isToday = planDay.day.toLowerCase() === todayDayStr.toLowerCase();
+        const isSelected = idx === selectedPlannerDayIndex;
+        const timeDisplay = planDay.time || '18:00';
+
+        if (planDay.isRest) {
+          return `
+            <div onclick="selectPlannerDay(${idx})" class="p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+              isSelected 
+                ? 'bg-neutral-900 border-ios-neon ring-1 ring-ios-neon shadow-glow-green' 
+                : 'bg-black/40 border-neutral-800 hover:border-neutral-700'
+            }">
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-xl ${isSelected ? 'bg-ios-neon text-black font-black' : 'bg-neutral-900 border border-neutral-800 text-neutral-400 font-bold'} text-xs flex items-center justify-center font-mono">
+                  ${planDay.day}
+                </span>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold ${isSelected ? 'text-white' : 'text-neutral-400'}">${planDay.title}</span>
+                    ${isToday ? '<span class="text-[8px] font-black px-1.5 py-0.2 rounded bg-ios-neon/20 text-ios-neon border border-ios-neon/30">TODAY</span>' : ''}
+                    ${isSelected ? '<span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-300">SELECTED</span>' : ''}
+                  </div>
+                  <span class="text-[10px] text-neutral-500">Rest & biological recovery</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="event.stopPropagation(); openEditDayModal(${idx})" class="p-1.5 rounded-lg bg-neutral-800 text-neutral-400 hover:text-white" title="Detailed Edit">
+                  <i class="ph-bold ph-sliders text-xs"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        return `
+          <div onclick="selectPlannerDay(${idx})" class="p-3 rounded-2xl border transition-all cursor-pointer ${
+            isSelected 
+              ? 'bg-ios-card border-ios-neon ring-2 ring-ios-neon/40 shadow-glow-green' 
+              : isToday 
+              ? 'bg-ios-card border-neutral-700 hover:border-neutral-600' 
+              : 'bg-ios-card border-neutral-800 hover:border-neutral-700'
+          } flex items-center justify-between">
+            <div class="flex items-start gap-3">
+              <span class="w-8 h-8 rounded-xl ${isSelected ? 'bg-ios-neon text-black' : isToday ? 'bg-neutral-700 text-white' : 'bg-ios-elevated text-white'} font-black text-xs flex items-center justify-center font-mono flex-shrink-0 mt-0.5">
+                ${planDay.day}
+              </span>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h4 class="text-xs font-black text-white">${planDay.title}</h4>
+                  ${isToday ? '<span class="text-[8px] font-black px-1.5 py-0.2 rounded bg-ios-neon text-black">TODAY</span>' : ''}
+                  ${isSelected ? '<span class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-ios-neon/20 text-ios-neon border border-ios-neon/30">SELECTED</span>' : ''}
+                </div>
+                <!-- Muscle Badges for Day -->
+                <div class="flex flex-wrap gap-1">
+                  ${(planDay.muscles || []).map(m => `
+                    <span class="text-[9px] font-semibold px-1.5 py-0.2 rounded ${isSelected ? 'bg-ios-neon/20 text-ios-neon border border-ios-neon/30' : 'bg-neutral-800 text-neutral-300'} capitalize">${m}</span>
+                  `).join('')}
+                </div>
+                <!-- Time & Equipment Summary Bar -->
+                <div class="flex items-center gap-2 text-[10px] font-mono text-neutral-400">
+                  <span class="flex items-center gap-1 text-ios-orange font-bold">
+                    <i class="ph-bold ph-alarm"></i> ${timeDisplay}
+                  </span>
+                  <span>•</span>
+                  <span>${(planDay.equipment || []).length} equipment items</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
+              <button onclick="event.stopPropagation(); openEditDayModal(${idx})" class="p-2 rounded-xl bg-ios-elevated border border-neutral-700/80 text-neutral-300 hover:text-white flex items-center gap-1 text-xs" title="Edit Time & Setup">
+                <i class="ph-bold ph-pencil-simple text-xs"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateSelectedDayBanner();
+    }
+
+    function openEditDayModal(dayIndex) {
+      playBeep('tap');
+      currentlyEditingDayIndex = dayIndex;
+      const dayData = appState.weeklyPlan[dayIndex];
+      if (!dayData) return;
+
+      document.getElementById('edit-day-title').textContent = `${dayData.day} • ${dayData.title}`;
+      document.getElementById('edit-day-subtitle').textContent = dayData.isRest ? 'Rest Day Setup' : 'Target Muscles, Time & Equipment';
+
+      // Set current day time input
+      const timeInput = document.getElementById('edit-day-time-input');
+      if (timeInput) {
+        timeInput.value = dayData.time || '18:00';
+      }
+
+      // Update Rest Day toggle button
+      const restBtn = document.getElementById('btn-toggle-day-rest');
+      const timeSection = document.getElementById('edit-day-time-section');
+      if (dayData.isRest) {
+        restBtn.textContent = 'Rest Day (Tap to activate)';
+        restBtn.className = 'px-3 py-1.5 rounded-xl bg-ios-red/20 border border-ios-red/40 text-xs font-bold text-ios-red transition';
+        if (timeSection) timeSection.classList.add('hidden');
+        document.getElementById('edit-day-muscles-section').classList.add('hidden');
+        document.getElementById('edit-day-equipment-section').classList.add('hidden');
+      } else {
+        restBtn.textContent = 'Workout Active (Tap to rest)';
+        restBtn.className = 'px-3 py-1.5 rounded-xl bg-ios-neon/20 border border-ios-neon/40 text-xs font-bold text-ios-neon transition';
+        if (timeSection) timeSection.classList.remove('hidden');
+        document.getElementById('edit-day-muscles-section').classList.remove('hidden');
+        document.getElementById('edit-day-equipment-section').classList.remove('hidden');
+      }
+
+      renderEditDayPills();
+      document.getElementById('modal-edit-day')?.classList.remove('hidden');
+    }
+
+    function updateDayTime(timeVal) {
+      if (currentlyEditingDayIndex === null) return;
+      const dayData = appState.weeklyPlan[currentlyEditingDayIndex];
+      if (dayData) {
+        dayData.time = timeVal;
+        if (currentlyEditingDayIndex === selectedPlannerDayIndex) {
+          appState.workoutTime = timeVal;
+          recalculateSupplements();
+          updateDashboardSessionSummary();
+        }
+      }
+    }
+
+    function toggleDayMuscle(muscleId) {
+      if (currentlyEditingDayIndex === null) return;
+      playBeep('tap');
+      const dayData = appState.weeklyPlan[currentlyEditingDayIndex];
+      if (!dayData.muscles) dayData.muscles = [];
+      const idx = dayData.muscles.indexOf(muscleId);
+      if (idx >= 0) {
+        if (dayData.muscles.length > 1) {
+          dayData.muscles.splice(idx, 1);
+        } else {
+          showToast('Keep at least 1 muscle selected', 'ph-warning');
+          return;
+        }
+      } else {
+        dayData.muscles.push(muscleId);
+      }
+      renderEditDayPills();
+    }
+
+    function toggleDayEquipment(eqId) {
+      if (currentlyEditingDayIndex === null) return;
+      playBeep('tap');
+      const dayData = appState.weeklyPlan[currentlyEditingDayIndex];
+      if (!dayData.equipment) dayData.equipment = [];
+      const idx = dayData.equipment.indexOf(eqId);
+      if (idx >= 0) {
+        if (dayData.equipment.length > 1) {
+          dayData.equipment.splice(idx, 1);
+        } else {
+          showToast('Keep at least 1 equipment type', 'ph-warning');
+          return;
+        }
+      } else {
+        dayData.equipment.push(eqId);
+      }
+      renderEditDayPills();
+    }
+
+    function saveDayEdits() {
+      playBeep('tap');
+      saveState();
+      renderWeeklyPlanCards();
+      closeEditDayModal();
+      showToast('Weekly plan updated!');
+    }
+
+    function closeEditDayModal() {
+      playBeep('tap');
+      document.getElementById('modal-edit-day')?.classList.add('hidden');
+    }
+
+    function toggleDayRestStatus() {
+      if (currentlyEditingDayIndex === null) return;
+      playBeep('tap');
+      const dayData = appState.weeklyPlan[currentlyEditingDayIndex];
+      if (!dayData) return;
+      dayData.isRest = !dayData.isRest;
+      if (dayData.isRest) {
+        dayData.title = 'Rest & Recovery';
+      } else {
+        dayData.title = 'Custom Workout';
+        if (!dayData.muscles || dayData.muscles.length === 0) dayData.muscles = ['chest', 'back'];
+        if (!dayData.equipment || dayData.equipment.length === 0) dayData.equipment = [...appState.availableEquipment];
+      }
+      openEditDayModal(currentlyEditingDayIndex);
+    }
+
+    function renderEditDayPills() {
+      if (currentlyEditingDayIndex === null) return;
+      const dayData = appState.weeklyPlan[currentlyEditingDayIndex];
+      if (!dayData || dayData.isRest) return;
+
+      const mCountEl = document.getElementById('edit-day-muscle-count');
+      const eqCountEl = document.getElementById('edit-day-equip-count');
+      const mContainer = document.getElementById('edit-day-muscle-pills');
+      const eqContainer = document.getElementById('edit-day-equip-pills');
+
+      if (mCountEl) mCountEl.textContent = `${(dayData.muscles || []).length} selected`;
+      if (eqCountEl) eqCountEl.textContent = `${(dayData.equipment || []).length} active`;
+
+      if (mContainer) {
+        mContainer.innerHTML = DEFAULT_MUSCLES.map(m => {
+          const isSelected = (dayData.muscles || []).includes(m.id);
+          return `
+            <button onclick="toggleDayMuscle('${m.id}')" class="p-2 rounded-xl text-left border text-[11px] font-bold flex items-center justify-between transition ${
+              isSelected ? 'bg-ios-neon/15 border-ios-neon text-white' : 'bg-black/50 border-neutral-800 text-neutral-400 hover:text-white'
+            }">
+              <span>${m.name}</span>
+              <i class="ph-bold ${isSelected ? 'ph-check-circle text-ios-neon' : 'ph-plus text-neutral-600'}"></i>
+            </button>
+          `;
+        }).join('');
+      }
+
+      if (eqContainer) {
+        eqContainer.innerHTML = DEFAULT_EQUIPMENT.map(eq => {
+          const isSelected = (dayData.equipment || []).includes(eq.id);
+          return `
+            <button onclick="toggleDayEquipment('${eq.id}')" class="p-2 rounded-xl text-left border text-[11px] font-bold flex items-center justify-between transition ${
+              isSelected ? 'bg-ios-accent/15 border-ios-accent text-white' : 'bg-black/50 border-neutral-800 text-neutral-400 hover:text-white'
+            }">
+              <div class="flex items-center gap-1.5 truncate">
+                <i class="ph-bold ${eq.icon}"></i>
+                <span class="truncate">${eq.name}</span>
+              </div>
+              <i class="ph-bold ${isSelected ? 'ph-check text-ios-accent' : 'ph-plus text-neutral-600'}"></i>
+            </button>
+          `;
+        }).join('');
+      }
+    }
+
+    function toggleSupersetMode() {
+      playBeep('tap');
+      appState.supersetMode = !appState.supersetMode;
+      saveState();
+      updateSupersetUI();
+      if (appState.currentSession) {
+        generateCustomWorkout(appState.currentSession.title);
+      }
+      showToast(`Superset Mode: ${appState.supersetMode ? 'ON (Antagonist Paired)' : 'OFF (Straight Sets)'}`);
+    }
+
+    function updateSupersetUI() {
+      const badge = document.getElementById('superset-mode-badge');
+      const knob = document.getElementById('superset-toggle-knob');
+      const btn = document.getElementById('btn-toggle-superset');
+      if (!badge || !knob || !btn) return;
+
+      if (appState.supersetMode) {
+        badge.textContent = 'ON';
+        badge.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-ios-purple/20 text-ios-purple border border-ios-purple/30';
+        btn.className = 'w-12 h-6 bg-ios-purple rounded-full p-0.5 transition-colors duration-200 ease-in-out relative flex items-center';
+        knob.className = 'w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out transform translate-x-6';
+      } else {
+        badge.textContent = 'OFF';
+        badge.className = 'text-[9px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400';
+        btn.className = 'w-12 h-6 bg-neutral-800 rounded-full p-0.5 transition-colors duration-200 ease-in-out relative flex items-center';
+        knob.className = 'w-5 h-5 bg-neutral-400 rounded-full transition-transform duration-200 ease-in-out transform translate-x-0';
+      }
+    }
+
+    function ensureTodayWorkoutSuggested() {
+      if (!appState.weeklyPlan) return;
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const todayDayStr = daysOfWeek[new Date().getDay()];
+      const todayPlan = appState.weeklyPlan.find(d => d.day.toLowerCase() === todayDayStr.toLowerCase());
+
+      if (todayPlan) {
+        if (todayPlan.isRest) {
+          const container = document.getElementById('active-exercises-container');
+          const titleEl = document.getElementById('active-session-title');
+          if (titleEl) titleEl.textContent = 'Today: Rest & Biological Recovery';
+          if (container) {
+            container.innerHTML = `
+              <div class="p-6 rounded-3xl bg-ios-card border border-neutral-800 text-center space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-neutral-800 flex items-center justify-center text-ios-neon mx-auto text-2xl">
+                  <i class="ph-bold ph-bed"></i>
+                </div>
+                <h3 class="text-sm font-black text-white">Scheduled Rest Day</h3>
+                <p class="text-xs text-neutral-400 max-w-xs mx-auto">
+                  Muscle protein synthesis and glycogen stores are recovering. You can still train today by tapping below:
+                </p>
+                <button onclick="generateCustomWorkout('Extra Training Session')" class="px-4 py-2 rounded-xl bg-ios-neon text-black text-xs font-black uppercase tracking-wider shadow-glow-green active:scale-95 transition">
+                  Train Anyway Today
+                </button>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        // If active session doesn't match today's plan, adopt today's split
+        if (!appState.currentSession || appState.currentSession.forDay !== todayPlan.day) {
+          appState.selectedMuscles = [...(todayPlan.muscles || ['chest', 'back'])];
+          appState.availableEquipment = [...(todayPlan.equipment || appState.availableEquipment)];
+          generateCustomWorkout(`${todayPlan.day} • ${todayPlan.title}`, todayPlan.day);
+        }
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.warn('Could not save state to localStorage', e);
+      }
+    }
+
+    function applyAndLaunchDaySession(dayIdx = null) {
+      const targetIndex = dayIdx !== null ? dayIdx : currentlyEditingDayIndex;
+      if (targetIndex === null) return;
+      playBeep('complete');
+      const dayData = appState.weeklyPlan[targetIndex];
+      if (dayData.isRest) {
+        showToast('This day is designated as Rest & Recovery', 'ph-warning');
+        return;
+      }
+
+      // Adopt this day's muscles, equipment and time into active state
+      appState.selectedMuscles = [...dayData.muscles];
+      appState.availableEquipment = [...dayData.equipment];
+      if (dayData.time) {
+        appState.workoutTime = dayData.time;
+      }
+      selectedPlannerDayIndex = targetIndex;
+      saveState();
+      renderSetupTiles();
+      recalculateSupplements();
+      updateDashboardSessionSummary();
+      closeEditDayModal();
+
+      // Immediately generate session and switch to Train tab
+      generateCustomWorkout();
+      showToast(`Loaded ${dayData.day}'s session (${dayData.time || '18:00'}) into Train!`);
+    }
+
+    function updateDashboardSessionSummary() {
+      const nameEl = document.getElementById('dashboard-session-name');
+      const timeEl = document.getElementById('dashboard-scheduled-time');
+      const badgesEl = document.getElementById('dashboard-muscle-badges');
+
+      // Pick time from today's plan day or selected plan day
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const todayDayStr = daysOfWeek[new Date().getDay()];
+      const todayPlanDay = (appState.weeklyPlan || []).find(d => d.day.toLowerCase() === todayDayStr.toLowerCase());
+      const activePlanDay = todayPlanDay || (appState.weeklyPlan && appState.weeklyPlan[selectedPlannerDayIndex]);
+      const sessionTime = (activePlanDay && activePlanDay.time) ? activePlanDay.time : (appState.workoutTime || '18:00');
+
+      if (nameEl) {
+        nameEl.textContent = appState.currentSession ? appState.currentSession.title : (activePlanDay ? activePlanDay.title : 'Hypertrophy Focus');
+      }
+      if (timeEl) {
+        timeEl.textContent = `Today • ${sessionTime}`;
+      }
+      if (badgesEl) {
+        const musclesToShow = (activePlanDay && !activePlanDay.isRest && activePlanDay.muscles) ? activePlanDay.muscles : appState.selectedMuscles;
+        badgesEl.innerHTML = (musclesToShow || []).map(m => `
+          <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300 capitalize">${m}</span>
+        `).join('');
+      }
+    }
+
+    /* =========================================================
+       7. WORKOUT GENERATOR & ACTIVE LOGGER
+       ========================================================= */
+    function generateCustomWorkout(customTitle = null, forDay = null) {
+      playBeep('tap');
+      
+      const available = EXERCISE_CATALOG.filter(ex => {
+        const matchesMuscle = appState.selectedMuscles.includes(ex.muscle);
+        const matchesEquip = ex.equipment.every(eq => appState.availableEquipment.includes(eq));
+        return matchesMuscle && matchesEquip;
+      });
+
+      if (available.length === 0) {
+        showToast('No exercises match this gear & muscle selection!', 'ph-warning');
+        return;
+      }
+
+      // Smart Novelty Scoring to mix up movements
+      const lastUsed = Array.isArray(appState.lastUsedExerciseIds) ? appState.lastUsedExerciseIds : [];
+      const scored = available.map(ex => {
+        let score = Math.random() * 2;
+        if (ex.compound) score += 1.5;
+        if (lastUsed.includes(ex.id)) score -= 2.0;
+        return { exercise: ex, score };
+      }).sort((a,b) => b.score - a.score);
+
+      const picked = [];
+      const coveredMuscles = new Set();
+      
+      // Ensure broad representation
+      for (const item of scored) {
+        if (!coveredMuscles.has(item.exercise.muscle) && picked.length < 5) {
+          picked.push(item.exercise);
+          coveredMuscles.add(item.exercise.muscle);
+        }
+      }
+      for (const item of scored) {
+        if (!picked.some(p => p.id === item.exercise.id) && picked.length < 5) {
+          picked.push(item.exercise);
+        }
+      }
+
+      // If Antagonist Supersets mode is active, pair opposing muscles (Chest+Back, Biceps+Triceps, Quads+Hamstrings)
+      if (appState.supersetMode && picked.length >= 2) {
+        const opposingPairs = [
+          ['chest', 'back'],
+          ['biceps', 'triceps'],
+          ['quads', 'hamstrings']
+        ];
+        
+        // Re-order picked exercises to place opposing muscle pairs back-to-back
+        const paired = [];
+        const remaining = [...picked];
+
+        opposingPairs.forEach(pair => {
+          const firstIdx = remaining.findIndex(e => e.muscle === pair[0]);
+          const secondIdx = remaining.findIndex(e => e.muscle === pair[1]);
+          if (firstIdx !== -1 && secondIdx !== -1) {
+            const e1 = remaining[firstIdx];
+            const e2 = remaining[secondIdx];
+            e1.supersetGroup = 'Pair A';
+            e2.supersetGroup = 'Pair A';
+            paired.push(e1, e2);
+          }
+        });
+
+        // Add remaining unpaired exercises
+        remaining.forEach(e => {
+          if (!paired.some(p => p.id === e.id)) {
+            e.supersetGroup = null;
+            paired.push(e);
+          }
+        });
+
+        if (paired.length > 0) {
+          picked.length = 0;
+          picked.push(...paired);
+        }
+      } else {
+        picked.forEach(e => e.supersetGroup = null);
+      }
+
+      const defaultTitle = `Target: ${appState.selectedMuscles.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(' • ')}`;
+
+      appState.currentSession = {
+        title: customTitle || defaultTitle,
+        forDay: forDay || null,
+        exercises: picked
+      };
+
+      appState.lastUsedExerciseIds = picked.map(p => p.id);
+
+      // Populate sets structure with smart baseline weight & warmups
+      picked.forEach(ex => {
+        if (!appState.loggedSets[ex.id]) {
+          const baselineData = appState.exerciseBaselines && appState.exerciseBaselines[ex.id];
+          const workingLoad = baselineData ? baselineData.workingWeight : (ex.compound ? 50 : 15);
+          const warmUpLoad = Math.max(20, Math.round((workingLoad * 0.6) / 2.5) * 2.5);
+
+          // Check if progressive step-up is ready based on previous session reps
+          let suggestedWorkingLoad = workingLoad;
+          if (baselineData && baselineData.lastReps >= (ex.compound ? 8 : 12)) {
+            const stepIncrement = ex.compound ? 2.5 : 1.25;
+            suggestedWorkingLoad = workingLoad + stepIncrement;
+          }
+
+          appState.loggedSets[ex.id] = [
+            { setNum: 1, type: 'W', weight: warmUpLoad, reps: 10, rir: 3, completed: false },
+            { setNum: 2, type: 'N', weight: suggestedWorkingLoad, reps: 8, rir: 2, completed: false },
+            { setNum: 3, type: 'N', weight: suggestedWorkingLoad, reps: 8, rir: 1, completed: false }
+          ];
+        }
+      });
+
+      saveState();
+      renderActiveLoggerUI();
+      switchTab('train');
+      updateDashboardSessionSummary();
+      showToast('Workout Ready for Today!');
+    }
+
+    function renderActiveLoggerUI() {
+      const container = document.getElementById('active-exercises-container');
+      const titleEl = document.getElementById('active-session-title');
+      if (!container || !appState.currentSession) return;
+
+      titleEl.textContent = appState.currentSession.title;
+
+      // Identify currently active exercise and set
+      let foundCurrent = false;
+      let currentExIndex = 0;
+      let currentSetIndex = 0;
+      let currentExercise = null;
+      let currentSet = null;
+      let nextPreviewText = 'Workout Finished';
+
+      appState.currentSession.exercises.forEach((ex, exIdx) => {
+        const sets = appState.loggedSets[ex.id] || [];
+        sets.forEach((s, sIdx) => {
+          if (!s.completed && !foundCurrent) {
+            foundCurrent = true;
+            currentExIndex = exIdx;
+            currentSetIndex = sIdx;
+            currentExercise = ex;
+            currentSet = s;
+          } else if (foundCurrent && nextPreviewText === 'Workout Finished') {
+            nextPreviewText = `${ex.name} (Set ${sIdx + 1})`;
+          }
+        });
+      });
+
+      // Update Guidance Banner
+      const exStepEl = document.getElementById('workout-progress-steps');
+      const curTaskExEl = document.getElementById('current-task-exercise');
+      const curTaskDetailEl = document.getElementById('current-task-detail');
+      const nextTaskEl = document.getElementById('upcoming-task-preview');
+
+      if (foundCurrent && currentExercise && currentSet) {
+        if (exStepEl) exStepEl.textContent = `Exercise ${currentExIndex + 1} of ${appState.currentSession.exercises.length}`;
+        if (curTaskExEl) curTaskExEl.textContent = currentExercise.name;
+        const typeLabel = currentSet.type === 'W' ? 'Warm-Up' : currentSet.type === 'D' ? 'Drop Set' : currentSet.type === 'F' ? 'Top Set' : 'Working Set';
+        if (curTaskDetailEl) curTaskDetailEl.textContent = `Do Set ${currentSetIndex + 1} • ${typeLabel} (${currentSet.weight} kg × ${currentSet.reps} reps)`;
+        if (nextTaskEl) nextTaskEl.textContent = nextPreviewText;
+      } else {
+        if (exStepEl) exStepEl.textContent = 'All Exercises Done';
+        if (curTaskExEl) curTaskExEl.textContent = 'Session Complete!';
+        if (curTaskDetailEl) curTaskDetailEl.textContent = 'Tap "Finish Workout" to log tonnage';
+        if (nextTaskEl) nextTaskEl.textContent = '—';
+      }
+
+      container.innerHTML = appState.currentSession.exercises.map((ex, exIdx) => {
+        const sets = appState.loggedSets[ex.id] || [];
+        const isCurrentExerciseCard = foundCurrent && exIdx === currentExIndex;
+        const allCompleted = sets.length > 0 && sets.every(s => s.completed);
+
+        // Calculate Progressive Overload & Baseline Memory status
+        const baseline = appState.exerciseBaselines && appState.exerciseBaselines[ex.id];
+        let overloadBannerHtml = '';
+        if (baseline) {
+          const stepUpReady = baseline.lastReps >= (ex.compound ? 8 : 12);
+          const inc = ex.compound ? 2.5 : 1.25;
+          if (stepUpReady) {
+            overloadBannerHtml = `
+              <div class="px-2.5 py-1.5 rounded-xl bg-ios-neon/15 border border-ios-neon/40 flex items-center justify-between text-[10px]">
+                <div class="flex items-center gap-1.5 text-ios-neon font-black">
+                  <i class="ph-bold ph-trend-up"></i>
+                  <span>Step-Up Ready: +${inc} kg</span>
+                </div>
+                <span class="text-neutral-300 font-mono">Baseline: ${baseline.workingWeight}kg × ${baseline.lastReps}r</span>
+              </div>
+            `;
+          } else {
+            overloadBannerHtml = `
+              <div class="px-2.5 py-1.5 rounded-xl bg-ios-elevated/70 border border-neutral-800 flex items-center justify-between text-[10px]">
+                <div class="flex items-center gap-1.5 text-neutral-300 font-bold">
+                  <i class="ph-bold ph-target text-ios-accent"></i>
+                  <span>Overload Target: Hit +1 rep at ${baseline.workingWeight} kg</span>
+                </div>
+                <span class="text-neutral-400 font-mono">Last: ${baseline.lastReps} reps</span>
+              </div>
+            `;
+          }
+        } else {
+          overloadBannerHtml = `
+            <div class="px-2.5 py-1 rounded-xl bg-black/40 border border-neutral-800 flex items-center justify-between text-[10px] text-neutral-400">
+              <span>Establishing Baseline Weight</span>
+              <span class="text-ios-accent font-bold">First Session</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="bg-ios-card rounded-3xl p-4 border transition-all duration-300 space-y-3 shadow-md ${isCurrentExerciseCard ? 'border-ios-neon/60 bg-gradient-to-b from-ios-card to-ios-elevated ring-1 ring-ios-neon/30' : allCompleted ? 'border-neutral-800/60 opacity-70' : 'border-neutral-800'}">
+            
+            <!-- Exercise Header Card with Order Indicator -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black font-mono ${allCompleted ? 'bg-ios-neon text-black' : isCurrentExerciseCard ? 'bg-ios-neon text-black animate-pulse' : 'bg-neutral-800 text-neutral-400'}">
+                  ${allCompleted ? '✓' : exIdx + 1}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">${ex.muscle.toUpperCase()} • ${ex.equipment.join(' + ')}</span>
+                    ${ex.supersetGroup ? `<span class="text-[9px] font-black text-ios-purple bg-ios-purple/20 px-1.5 py-0.2 rounded border border-ios-purple/40">${ex.supersetGroup}</span>` : ''}
+                    ${isCurrentExerciseCard ? '<span class="text-[9px] font-bold text-ios-neon bg-ios-neon/15 px-1.5 py-0.2 rounded-full border border-ios-neon/30">DOING NOW</span>' : ''}
+                  </div>
+                  <h3 class="text-sm font-black text-white">${ex.name}</h3>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button onclick="openFormGuide('${ex.id}')" class="w-8 h-8 rounded-xl bg-ios-elevated text-ios-neon border border-neutral-700 flex items-center justify-center hover:bg-neutral-800 active:scale-95 transition" title="Form Guide">
+                  <i class="ph-bold ph-info text-base"></i>
+                </button>
+                <button onclick="swapSingleExercise('${ex.id}', '${ex.muscle}')" class="w-8 h-8 rounded-xl bg-ios-elevated text-neutral-300 border border-neutral-700 flex items-center justify-center hover:bg-neutral-800 active:scale-95 transition" title="Swap Movement">
+                  <i class="ph-bold ph-arrows-left-right text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Progressive Overload Baseline Card -->
+            ${overloadBannerHtml}
+
+            <!-- Stretch-Mediated Hypertrophy Cue -->
+            <div class="p-2.5 rounded-2xl bg-black/40 border border-neutral-800/80 flex items-start gap-2">
+              <i class="ph-fill ph-lightbulb text-yellow-400 text-sm mt-0.5"></i>
+              <p class="text-[11px] text-neutral-300 leading-snug">${ex.tip}</p>
+            </div>
+
+            <!-- Set Table Header -->
+            <div class="grid grid-cols-12 gap-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider text-center px-1">
+              <span class="col-span-2 text-left">Set</span>
+              <span class="col-span-3">Weight</span>
+              <span class="col-span-3">Reps</span>
+              <span class="col-span-2">RIR</span>
+              <span class="col-span-2 text-right">Done</span>
+            </div>
+
+            <!-- Set Rows -->
+            <div class="space-y-1.5">
+              ${sets.map((set, sIdx) => {
+                const isExactActiveSet = foundCurrent && exIdx === currentExIndex && sIdx === currentSetIndex;
+
+                return `
+                <div class="grid grid-cols-12 gap-1 items-center p-1.5 rounded-xl transition-all ${
+                  isExactActiveSet 
+                    ? 'bg-ios-neon/15 border-2 border-ios-neon ring-2 ring-ios-neon/20 shadow-glow-green' 
+                    : set.completed 
+                    ? 'bg-ios-neon/10 border border-ios-neon/30' 
+                    : 'bg-ios-elevated border border-neutral-800'
+                } text-xs">
+                  
+                  <!-- Set Type Badge (Cycles W -> N -> D -> F) -->
+                  <div class="col-span-2 flex items-center gap-1">
+                    <button onclick="cycleSetType('${ex.id}', ${sIdx})" class="w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center ${getSetTypeBadgeClass(set.type)}">
+                      ${set.type}
+                    </button>
+                    ${isExactActiveSet ? '<span class="text-[8px] font-black text-ios-neon uppercase">NOW</span>' : ''}
+                  </div>
+
+                  <!-- Weight Input -->
+                  <div class="col-span-3 flex items-center justify-center">
+                    <input type="number" step="0.5" value="${set.weight}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'weight', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
+                  </div>
+
+                  <!-- Reps Input -->
+                  <div class="col-span-3 flex items-center justify-center">
+                    <input type="number" value="${set.reps}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'reps', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
+                  </div>
+
+                  <!-- RIR Selector -->
+                  <div class="col-span-2 flex items-center justify-center">
+                    <select onchange="updateSetVal('${ex.id}', ${sIdx}, 'rir', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-neutral-300 rounded-lg py-1 border border-neutral-700 text-[10px] focus:outline-none">
+                      <option value="0" ${set.rir == 0 ? 'selected' : ''}>0 RIR</option>
+                      <option value="1" ${set.rir == 1 ? 'selected' : ''}>1 RIR</option>
+                      <option value="2" ${set.rir == 2 ? 'selected' : ''}>2 RIR</option>
+                      <option value="3" ${set.rir == 3 ? 'selected' : ''}>3 RIR</option>
+                    </select>
+                  </div>
+
+                  <!-- Complete Checkbox -->
+                  <div class="col-span-2 flex items-center justify-end">
+                    <button onclick="toggleSetComplete('${ex.id}', ${sIdx})" class="w-7 h-7 rounded-xl flex items-center justify-center transition ${
+                      set.completed 
+                        ? 'bg-ios-neon text-black shadow-glow-green' 
+                        : isExactActiveSet
+                        ? 'bg-ios-neon/30 text-ios-neon border border-ios-neon hover:bg-ios-neon hover:text-black animate-pulse'
+                        : 'bg-neutral-800 text-neutral-500 hover:text-white'
+                    }">
+                      <i class="ph-bold ph-check text-sm"></i>
+                    </button>
+                  </div>
+                </div>
+              `;}).join('')}
+            </div>
+
+            <!-- Add Set Row Button & Quick Form Trigger -->
+            <div class="flex items-center justify-between pt-1">
+              <button onclick="addSetRow('${ex.id}')" class="px-3 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700 text-[11px] font-bold text-ios-accent flex items-center gap-1 active:scale-95 transition">
+                <i class="ph-bold ph-plus"></i> Add Set
+              </button>
+              <button onclick="openFormGuide('${ex.id}')" class="text-[11px] text-neutral-400 hover:text-ios-neon flex items-center gap-1">
+                <i class="ph-bold ph-book-open"></i> How to Execute
+              </button>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      recalculateSessionMetrics();
+    }
+
+    function getSetTypeBadgeClass(type) {
+      if (type === 'W') return 'bg-ios-orange/20 text-ios-orange border border-ios-orange/30';
+      if (type === 'D') return 'bg-ios-purple/20 text-ios-purple border border-ios-purple/30';
+      if (type === 'F') return 'bg-ios-red/20 text-ios-red border border-ios-red/30';
+      return 'bg-neutral-700 text-white';
+    }
+
+    function cycleSetType(exId, sIdx) {
+      playBeep('tap');
+      const order = ['N', 'W', 'D', 'F'];
+      const set = appState.loggedSets[exId][sIdx];
+      const cur = order.indexOf(set.type || 'N');
+      set.type = order[(cur + 1) % order.length];
+      saveState();
+      renderActiveLoggerUI();
+    }
+
+    function updateSetVal(exId, sIdx, field, val) {
+      if (!appState.loggedSets[exId]) return;
+      const numVal = parseFloat(val) || 0;
+      appState.loggedSets[exId][sIdx][field] = numVal;
+
+      // Remember working weight as baseline when user modifies normal or top working sets
+      const set = appState.loggedSets[exId][sIdx];
+      if (field === 'weight' && numVal > 0 && set.type !== 'W') {
+        if (!appState.exerciseBaselines) appState.exerciseBaselines = {};
+        appState.exerciseBaselines[exId] = {
+          workingWeight: numVal,
+          lastReps: set.reps || 8,
+          lastRir: set.rir || 2,
+          date: 'Active Session'
+        };
+      }
+
+      saveState();
+      recalculateSessionMetrics();
+    }
+
+    function toggleSetComplete(exId, sIdx) {
+      const set = appState.loggedSets[exId][sIdx];
+      set.completed = !set.completed;
+      playBeep(set.completed ? 'complete' : 'tap');
+
+      if (set.completed) {
+        startRestTimerAuto();
+        const sub = document.getElementById('timer-status-subtext');
+        if (sub) sub.textContent = 'Resting • Catch Breath';
+
+        // Update baseline memory on completed working set
+        if (set.type !== 'W' && set.weight > 0) {
+          if (!appState.exerciseBaselines) appState.exerciseBaselines = {};
+          appState.exerciseBaselines[exId] = {
+            workingWeight: set.weight,
+            lastReps: set.reps,
+            lastRir: set.rir,
+            date: 'Today'
+          };
+          
+          // Check if lifter graduated to a progressive step-up
+          const exObj = EXERCISE_CATALOG.find(e => e.id === exId);
+          const topRepCap = (exObj && exObj.compound) ? 8 : 12;
+          if (set.reps >= topRepCap && set.rir <= 2) {
+            const stepVal = (exObj && exObj.compound) ? 2.5 : 1.25;
+            showToast(`Overload Target Met! +${stepVal}kg step-up recommended next session`, 'ph-trend-up');
+          }
+        }
+      }
+      saveState();
+      renderActiveLoggerUI();
+    }
+
+    function addSetRow(exId) {
+      playBeep('tap');
+      const sets = appState.loggedSets[exId];
+      const last = sets[sets.length - 1] || { weight: 50, reps: 10, rir: 2 };
+      sets.push({
+        setNum: sets.length + 1,
+        type: 'N',
+        weight: last.weight,
+        reps: last.reps,
+        rir: last.rir,
+        completed: false
+      });
+      saveState();
+      renderActiveLoggerUI();
+    }
+
+    function swapSingleExercise(oldId, muscleGroup) {
+      playBeep('tap');
+      const candidateList = EXERCISE_CATALOG.filter(ex => 
+        ex.muscle === muscleGroup && 
+        ex.id !== oldId && 
+        ex.equipment.every(eq => appState.availableEquipment.includes(eq))
+      );
+
+      if (candidateList.length === 0) {
+        showToast('No alternate exercise with your equipment!', 'ph-warning');
+        return;
+      }
+
+      const randomAlt = candidateList[Math.floor(Math.random() * candidateList.length)];
+      const idx = appState.currentSession.exercises.findIndex(e => e.id === oldId);
+      if (idx >= 0) {
+        appState.currentSession.exercises[idx] = randomAlt;
+        appState.loggedSets[randomAlt.id] = [
+          { setNum: 1, type: 'N', weight: 50, reps: 10, rir: 2, completed: false },
+          { setNum: 2, type: 'N', weight: 50, reps: 10, rir: 2, completed: false },
+          { setNum: 3, type: 'N', weight: 50, reps: 10, rir: 1, completed: false }
+        ];
+        saveState();
+        renderActiveLoggerUI();
+        showToast(`Substituted with ${randomAlt.name}`);
+      }
+    }
+
+    function recalculateSessionMetrics() {
+      let totalKg = 0;
+      let totalSets = 0;
+      let completedSets = 0;
+      let rirSum = 0;
+
+      if (appState.currentSession) {
+        appState.currentSession.exercises.forEach(ex => {
+          const sets = appState.loggedSets[ex.id] || [];
+          sets.forEach(s => {
+            totalSets++;
+            if (s.completed) {
+              completedSets++;
+              totalKg += (s.weight * s.reps);
+              rirSum += s.rir;
+            }
+          });
+        });
+      }
+
+      document.getElementById('active-total-volume').textContent = `${totalKg.toLocaleString()} kg`;
+      document.getElementById('active-sets-count').textContent = `${completedSets} / ${totalSets}`;
+      document.getElementById('active-avg-rir').textContent = completedSets > 0 ? `${(rirSum / completedSets).toFixed(1)} RIR` : '—';
+
+      // Update workout overall progress bar
+      const progBar = document.getElementById('workout-total-progress-bar');
+      if (progBar) {
+        const pct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
+        progBar.style.width = `${pct}%`;
+      }
+    }
+
+    /* =========================================================
+       8. REST TIMER (WITH LIVE TONE.JS ALERTS)
+       ========================================================= */
+    let restTimerSeconds = 90;
+    let isTimerActive = false;
+    let restTimerInterval = null;
+
+    function formatTime(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = totalSeconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function toggleSetComplete(exId, sIdx) {
+      const set = appState.loggedSets[exId][sIdx];
+      set.completed = !set.completed;
+      playBeep(set.completed ? 'complete' : 'tap');
+
+      if (set.completed) {
+        startRestTimerAuto();
+        const sub = document.getElementById('timer-status-subtext');
+        if (sub) sub.textContent = 'Resting • Catch Breath';
+      }
+      saveState();
+      renderActiveLoggerUI();
+    }
+
+    function updateRestTimerDisplay() {
+      const el = document.getElementById('timer-display');
+      if (el) el.textContent = formatTime(restTimerSeconds);
+    }
+
+    function toggleRestTimer() {
+      playBeep('tap');
+      if (isTimerActive) {
+        pauseRestTimer();
+      } else {
+        startRestTimer();
+      }
+    }
+
+    function startRestTimer() {
+      isTimerActive = true;
+      document.getElementById('btn-timer-toggle').textContent = 'Pause';
+      document.getElementById('btn-timer-toggle').className = 'px-3 py-1 rounded-lg bg-neutral-700 text-xs font-bold text-white active:scale-95 transition';
+
+      clearInterval(restTimerInterval);
+      restTimerInterval = setInterval(() => {
+        if (restTimerSeconds > 0) {
+          restTimerSeconds--;
+          updateRestTimerDisplay();
+        } else {
+          pauseRestTimer();
+          playBeep('timer_done');
+          showToast('Rest interval complete! Time to lift.', 'ph-bell-ringing');
+          restTimerSeconds = 90;
+          updateRestTimerDisplay();
+        }
+      }, 1000);
+    }
+
+    function pauseRestTimer() {
+      isTimerActive = false;
+      clearInterval(restTimerInterval);
+      document.getElementById('btn-timer-toggle').textContent = 'Start';
+      document.getElementById('btn-timer-toggle').className = 'px-3 py-1 rounded-lg bg-ios-orange text-xs font-bold text-black active:scale-95 transition';
+    }
+
+    function startRestTimerAuto() {
+      restTimerSeconds = 90;
+      updateRestTimerDisplay();
+      startRestTimer();
+    }
+
+    function adjustRestTimer(seconds) {
+      playBeep('tap');
+      restTimerSeconds = Math.max(15, restTimerSeconds + seconds);
+      updateRestTimerDisplay();
+    }
+
+    /* =========================================================
+       9. POST-WORKOUT FINISH, SUMMARY & ADVANCEMENT
+       ========================================================= */
+    function finishAndLogWorkout() {
+      playBeep('complete');
+      
+      let sessionKg = 0;
+      let sessionSets = 0;
+
+      if (appState.currentSession) {
+        appState.currentSession.exercises.forEach(ex => {
+          const sets = appState.loggedSets[ex.id] || [];
+          let maxWorkingWeight = 0;
+          let bestReps = 0;
+          let bestRir = 2;
+
+          sets.forEach(s => {
+            if (s.completed) {
+              sessionSets++;
+              sessionKg += (s.weight * s.reps);
+              if (s.type !== 'W' && s.weight >= maxWorkingWeight) {
+                maxWorkingWeight = s.weight;
+                bestReps = s.reps;
+                bestRir = s.rir;
+              }
+            }
+          });
+
+          // Consolidate and preserve final baseline weights for future workouts
+          if (maxWorkingWeight > 0) {
+            if (!appState.exerciseBaselines) appState.exerciseBaselines = {};
+            appState.exerciseBaselines[ex.id] = {
+              workingWeight: maxWorkingWeight,
+              lastReps: bestReps,
+              lastRir: bestRir,
+              date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            };
+          }
+        });
+      }
+
+      if (sessionKg === 0) sessionKg = 4250;
+      if (sessionSets === 0) sessionSets = 12;
+
+      // Extract detailed breakdown of performed sets for the log page
+      const sessionExerciseDetails = [];
+      if (appState.currentSession && appState.currentSession.exercises) {
+        appState.currentSession.exercises.forEach(ex => {
+          const sets = (appState.loggedSets[ex.id] || []).filter(s => s.completed);
+          if (sets.length > 0) {
+            const summaryStr = `${sets.length} sets (${sets.map(s => `${s.weight}kg × ${s.reps}r`).join(', ')})`;
+            sessionExerciseDetails.push({
+              name: ex.name,
+              sets: summaryStr
+            });
+          }
+        });
+      }
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      // Add to workout history log
+      appState.workoutHistory.unshift({
+        id: 'h_' + Date.now(),
+        date: `Today • ${timeStr}`,
+        title: appState.currentSession ? appState.currentSession.title : 'Hypertrophy Session',
+        volume: sessionKg,
+        sets: sessionSets,
+        duration: '48m',
+        muscles: [...appState.selectedMuscles],
+        details: sessionExerciseDetails
+      });
+
+      saveState();
+      renderWorkoutHistoryUI();
+      renderDedicatedLogPage();
+      updateDashboardSessionSummary();
+      showToast('Workout Logged! Baseline weights updated for progressive overload.');
+      setTimeout(() => switchTab('log'), 600);
+    }
+
+    function renderDedicatedLogPage() {
+      const container = document.getElementById('session-log-cards-container');
+      const badgeCount = document.getElementById('log-total-count-badge');
+      const lifetimeVol = document.getElementById('log-lifetime-volume');
+      const lifetimeSets = document.getElementById('log-lifetime-sets');
+
+      if (!container) return;
+
+      const history = appState.workoutHistory || [];
+      if (badgeCount) badgeCount.textContent = `${history.length} Completed`;
+
+      // Calculate totals
+      let totalKg = 0;
+      let totalS = 0;
+      history.forEach(h => {
+        totalKg += (h.volume || 0);
+        totalS += (h.sets || 0);
+      });
+
+      if (lifetimeVol) lifetimeVol.textContent = `${totalKg.toLocaleString()} kg`;
+      if (lifetimeSets) lifetimeSets.textContent = `${totalS} Sets`;
+
+      if (history.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 rounded-3xl bg-ios-card border border-neutral-800 text-center space-y-2">
+            <i class="ph-bold ph-calendar-x text-neutral-600 text-3xl mx-auto block"></i>
+            <h4 class="text-sm font-bold text-white">No Previous Logs Found</h4>
+            <p class="text-xs text-neutral-500">Finish and log your workout on the Train tab to see detailed session summaries here.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = history.map((session, sIdx) => {
+        const musclesList = session.muscles || ['chest', 'back'];
+        const detailsList = session.details || [];
+
+        return `
+          <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 shadow-md space-y-3">
+            
+            <!-- Session Card Header -->
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="text-[10px] font-mono font-bold text-ios-neon block">${session.date}</span>
+                <h3 class="text-sm font-black text-white">${session.title}</h3>
+                <div class="flex flex-wrap gap-1 pt-1">
+                  ${musclesList.map(m => `
+                    <span class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-300 capitalize">${m}</span>
+                  `).join('')}
+                </div>
+              </div>
+              <button onclick="repeatPastSession(${sIdx})" class="px-2.5 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700 text-ios-accent hover:text-white text-[10px] font-bold flex items-center gap-1 active:scale-95 transition" title="Repeat this session">
+                <i class="ph-bold ph-arrows-counter-clockwise"></i> Repeat
+              </button>
+            </div>
+
+            <!-- Metrics Quick Row -->
+            <div class="grid grid-cols-3 gap-2 text-center p-2 rounded-2xl bg-black/40 border border-neutral-800/80 font-mono text-xs">
+              <div>
+                <span class="text-[9px] text-neutral-500 uppercase block font-sans font-bold">Volume</span>
+                <span class="text-white font-black">${(session.volume || 0).toLocaleString()} kg</span>
+              </div>
+              <div>
+                <span class="text-[9px] text-neutral-500 uppercase block font-sans font-bold">Total Sets</span>
+                <span class="text-ios-neon font-black">${session.sets} Sets</span>
+              </div>
+              <div>
+                <span class="text-[9px] text-neutral-500 uppercase block font-sans font-bold">Duration</span>
+                <span class="text-ios-orange font-black">${session.duration || '45m'}</span>
+              </div>
+            </div>
+
+            <!-- Collapsible Exercise Detail Breakdown -->
+            <div class="space-y-1.5 pt-1 border-t border-neutral-800/70">
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Completed Exercises:</span>
+              ${detailsList.length > 0 ? detailsList.map(d => `
+                <div class="p-2 rounded-xl bg-ios-elevated/50 flex items-center justify-between text-xs">
+                  <span class="font-bold text-neutral-200">${d.name}</span>
+                  <span class="text-[10px] font-mono text-neutral-400">${d.sets}</span>
+                </div>
+              `).join('') : `
+                <div class="p-2 rounded-xl bg-ios-elevated/40 text-[11px] text-neutral-400">
+                  Full hypertrophy compound and isolation volume recorded.
+                </div>
+              `}
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    function repeatPastSession(idx) {
+      playBeep('complete');
+      const session = appState.workoutHistory[idx];
+      if (!session) return;
+
+      if (session.muscles && session.muscles.length > 0) {
+        appState.selectedMuscles = [...session.muscles];
+      }
+      generateCustomWorkout(`Repeat: ${session.title}`);
+      showToast(`Loaded ${session.title} into Train!`);
+    }
+
+    function renderWorkoutHistoryUI() {
+      const snippet = document.getElementById('recent-history-snippet');
+      const modalList = document.getElementById('history-modal-list');
+
+      if (snippet && appState.workoutHistory.length > 0) {
+        const top = appState.workoutHistory[0];
+        snippet.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-white">${top.title}</span>
+            <span class="text-[10px] text-neutral-400 font-mono">${top.date}</span>
+          </div>
+          <div class="flex items-center gap-3 text-[10px] text-neutral-400 font-mono">
+            <span><i class="ph-bold ph-barbell text-ios-neon"></i> ${top.volume.toLocaleString()} kg</span>
+            <span><i class="ph-bold ph-check text-ios-accent"></i> ${top.sets} Sets</span>
+            <span><i class="ph-bold ph-timer text-ios-orange"></i> ${top.duration}</span>
+          </div>
+        `;
+      }
+
+      if (modalList) {
+        modalList.innerHTML = appState.workoutHistory.map(h => `
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-white">${h.title}</span>
+              <span class="text-[10px] text-neutral-400 font-mono">${h.date}</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-mono pt-1 text-neutral-300">
+              <span class="text-ios-neon font-bold">${h.volume.toLocaleString()} kg lifted</span>
+              <span class="text-neutral-400">${h.sets} Total Sets</span>
+              <span class="text-neutral-400">${h.duration}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function openWorkoutHistoryModal() {
+      playBeep('tap');
+      document.getElementById('modal-history')?.classList.remove('hidden');
+    }
+    function closeWorkoutHistoryModal() {
+      playBeep('tap');
+      document.getElementById('modal-history')?.classList.add('hidden');
+    }
+
+    /* =========================================================
+       11. HYPERTROPHY LANDMARKS & RECOVERY READINESS
+       ========================================================= */
+    function renderHypertrophyLandmarks() {
+      const container = document.getElementById('landmarks-list-container');
+      if (!container) return;
+
+      const primaryMuscles = ['chest', 'back', 'shoulders', 'quads', 'hamstrings'];
+
+      container.innerHTML = primaryMuscles.map(m => {
+        const count = appState.weeklyMuscleSets[m] || 12;
+        // MEV: 8 sets, MAV: 10-20 sets, MRV: 22 sets
+        let statusText = 'Optimal MAV';
+        let statusColor = 'text-ios-neon';
+        let barColor = 'bg-ios-neon';
+        let pct = (count / 24) * 100;
+
+        if (count < 8) {
+          statusText = 'Under MEV';
+          statusColor = 'text-yellow-400';
+          barColor = 'bg-yellow-400';
+        } else if (count > 20) {
+          statusText = 'Near MRV';
+          statusColor = 'text-ios-red';
+          barColor = 'bg-ios-red';
+        }
+
+        return `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-neutral-300 capitalize">${m}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold ${statusColor}">${statusText}</span>
+                <span class="font-mono text-[11px] font-bold text-white">${count} / 20 sets</span>
+              </div>
+            </div>
+            <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+              <div class="${barColor} h-full transition-all duration-500" style="width: ${Math.min(pct, 100)}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderRecoveryHeatmap() {
+      const container = document.getElementById('recovery-heatmap-container');
+      if (!container) return;
+
+      const recoveryList = [
+        { name: 'Chest', hours: 36, status: 'Recovered', color: 'text-ios-neon' },
+        { name: 'Back & Lats', hours: 14, status: 'MPS Peak', color: 'text-yellow-400' },
+        { name: 'Legs & Quads', hours: 44, status: 'Ready to Train', color: 'text-ios-neon' },
+        { name: 'Deltoids', hours: 22, status: 'Synthesizing', color: 'text-yellow-400' }
+      ];
+
+      container.innerHTML = recoveryList.map(r => `
+        <div class="p-2.5 rounded-2xl bg-ios-elevated/70 border border-neutral-800 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-bold text-white block">${r.name}</span>
+            <span class="text-[9px] text-neutral-400 font-mono">${r.hours}h since load</span>
+          </div>
+          <span class="text-[10px] font-black ${r.color}">${r.status}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderPRCards() {
+      const container = document.getElementById('pr-cards-container');
+      if (!container) return;
+
+      const prs = [
+        { label: 'Bench', val: appState.personalRecords.bench },
+        { label: 'Squat', val: appState.personalRecords.squat },
+        { label: 'Deadlift', val: appState.personalRecords.deadlift },
+        { label: 'OHP', val: appState.personalRecords.ohp }
+      ];
+
+      container.innerHTML = prs.map(p => `
+        <div class="p-2 rounded-2xl bg-ios-elevated/60 border border-neutral-800">
+          <span class="text-[9px] font-bold text-neutral-400 block">${p.label}</span>
+          <span class="text-xs font-black text-white font-mono">${p.val} kg</span>
+        </div>
+      `).join('');
+    }
+
+    function openPRModal() {
+      playBeep('tap');
+      document.getElementById('input-pr-bench').value = appState.personalRecords.bench;
+      document.getElementById('input-pr-squat').value = appState.personalRecords.squat;
+      document.getElementById('input-pr-deadlift').value = appState.personalRecords.deadlift;
+      document.getElementById('input-pr-ohp').value = appState.personalRecords.ohp;
+      document.getElementById('modal-prs')?.classList.remove('hidden');
+    }
+    function closePRModal() {
+      playBeep('tap');
+      document.getElementById('modal-prs')?.classList.add('hidden');
+    }
+    function savePRUpdates() {
+      playBeep('tap');
+      appState.personalRecords.bench = parseFloat(document.getElementById('input-pr-bench').value) || 100;
+      appState.personalRecords.squat = parseFloat(document.getElementById('input-pr-squat').value) || 140;
+      appState.personalRecords.deadlift = parseFloat(document.getElementById('input-pr-deadlift').value) || 180;
+      appState.personalRecords.ohp = parseFloat(document.getElementById('input-pr-ohp').value) || 60;
+      saveState();
+      renderPRCards();
+      closePRModal();
+      showToast('1RM Milestones Updated!');
+    }
+
+    /* =========================================================
+       12. MULTI-TIMEFRAME CHART.JS VOLUME ANALYTICS
+       ========================================================= */
+    let chartInstance = null;
+
+    const CHART_DATA_SETS = {
+      daily: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        data: [5800, 7200, 0, 6890, 8450, 0, 6200],
+        total: '34,540 kg',
+        avg: '6,908 kg',
+        peak: '8,450 kg'
+      },
+      weekly: {
+        labels: ['Wk 41', 'Wk 42', 'Wk 43', 'Wk 44', 'Wk 45', 'Wk 46'],
+        data: [28500, 31200, 29800, 34500, 36200, 38400],
+        total: '198,600 kg',
+        avg: '33,100 kg',
+        peak: '38,400 kg'
+      },
+      monthly: {
+        labels: ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+        data: [120000, 134000, 142000, 139000, 155000, 168000],
+        total: '858,000 kg',
+        avg: '143,000 kg',
+        peak: '168,000 kg'
+      }
+    };
+
+    function setTimeframe(tf) {
+      playBeep('tap');
+      appState.timeframe = tf;
+      ['daily', 'weekly', 'monthly'].forEach(key => {
+        const btn = document.getElementById(`btn-tf-${key}`);
+        if (btn) {
+          if (key === tf) {
+            btn.className = 'px-2.5 py-1 rounded-lg bg-ios-elevated text-white transition';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-lg text-neutral-400 transition hover:text-white';
+          }
+        }
+      });
+      renderVolumeChart();
+    }
+
+    function renderVolumeChart() {
+      const canvas = document.getElementById('volumeProgressChart');
+      if (!canvas) return;
+
+      const tf = appState.timeframe || 'daily';
+      const conf = CHART_DATA_SETS[tf];
+
+      document.getElementById('metric-period-tonnage').textContent = conf.total;
+      document.getElementById('metric-avg-volume').textContent = conf.avg;
+      document.getElementById('metric-peak-volume').textContent = conf.peak;
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      const ctx = canvas.getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: conf.labels,
+          datasets: [{
+            label: 'Volume (kg)',
+            data: conf.data,
+            backgroundColor: '#10B981',
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1C1C1E',
+              titleColor: '#FFFFFF',
+              bodyColor: '#10B981',
+              borderColor: '#3A3A3C',
+              borderWidth: 1,
+              cornerRadius: 10,
+              displayColors: false,
+              callbacks: {
+                label: (ctx) => `${ctx.parsed.y.toLocaleString()} kg`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#8E8E93', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: '#2C2C2E', drawBorder: false },
+              ticks: { 
+                color: '#8E8E93', 
+                font: { size: 9 },
+                callback: (val) => val >= 1000 ? `${val/1000}k` : val 
+              }
+            }
+          }
+        }
+      });
+    }
+
+    /* =========================================================
+       13. PROTEIN GOALS & ACTIVITY RINGS
+       ========================================================= */
+    function quickAddProtein(grams) {
+      playBeep('tap');
+      appState.proteinLogged += grams;
+      saveState();
+      updateProteinUI();
+      showToast(`+${grams}g Protein logged!`, 'ph-fork-knife');
+    }
+
+    function updateProteinUI() {
+      const target = Math.round(appState.bodyWeightKg * 2.1);
+      const current = appState.proteinLogged || 0;
+      const pct = Math.min(100, Math.round((current / target) * 100));
+      const left = Math.max(0, target - current);
+
+      document.getElementById('protein-progress-counter').textContent = `${current}g / ${target}g Target`;
+      document.getElementById('protein-remaining-label').textContent = `${left}g left`;
+      document.getElementById('protein-progress-fill').style.width = `${pct}%`;
+
+      document.getElementById('ring-val-protein').textContent = `${current}g`;
+      document.getElementById('ring-bar-protein').style.width = `${pct}%`;
+    }
+
+    /* =========================================================
+       14. SUPPLEMENT PROTOCOL CALCULATOR & TIMING ENGINE
+       ========================================================= */
+    function adjustUserWeight(val) {
+      appState.bodyWeightKg = parseInt(val, 10);
+      document.getElementById('label-user-weight').textContent = `${appState.bodyWeightKg} kg`;
+      saveState();
+      recalculateSupplements();
+      updateProteinUI();
+    }
+
+    function toggleSupplementIntake(suppKey) {
+      playBeep('tap');
+      appState.supplementsTaken[suppKey] = !appState.supplementsTaken[suppKey];
+      saveState();
+      recalculateSupplements();
+    }
+
+    function calculateChronoTime(baseTimeStr, offsetMinutes) {
+      if (!baseTimeStr) baseTimeStr = '18:00';
+      const [h, m] = baseTimeStr.split(':').map(Number);
+      const date = new Date();
+      date.setHours(h, m, 0, 0);
+      date.setMinutes(date.getMinutes() + offsetMinutes);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    function recalculateSupplements() {
+      const container = document.getElementById('supplement-timeline-container');
+      if (!container) return;
+
+      const bw = appState.bodyWeightKg || 78;
+      const t = appState.workoutTime || '18:00';
+
+      const dailyProtein = Math.round(bw * 2.1);
+      const creatineDose = 5;
+      const bcaaDose = Math.round(bw * 0.1);
+      const preCaffeine = Math.round(bw * 2.5);
+      const waterLiters = (bw * 0.045).toFixed(1);
+
+      const suppItems = [
+        {
+          key: 'protein',
+          name: 'Whey Isolate / Essential Aminos',
+          dose: `${dailyProtein}g Daily Target (35g Post-Session)`,
+          timing: `${calculateChronoTime(t, 30)} (Within 45m Post-Workout)`,
+          desc: 'Maximizes Muscle Protein Synthesis (MPS) via rapid leucine uptake.',
+          color: 'text-ios-purple',
+          icon: 'ph-egg'
+        },
+        {
+          key: 'creatine',
+          name: 'Creatine Monohydrate',
+          dose: `${creatineDose}g (Saturation Maintenance)`,
+          timing: `${calculateChronoTime(t, 20)} (Post-Workout with Carbs)`,
+          desc: 'Replenishes intramuscular phosphocreatine stores to maximize ATP power output.',
+          color: 'text-ios-neon',
+          icon: 'ph-lightning'
+        },
+        {
+          key: 'preworkout',
+          name: 'Pre-Workout & L-Citrulline',
+          dose: `${preCaffeine}mg Caffeine + 8g Citrulline Malate`,
+          timing: `${calculateChronoTime(t, -40)} (40m Before Session)`,
+          desc: 'Elevates motor unit recruitment and induces nitric oxide vasodilation pump.',
+          color: 'text-ios-orange',
+          icon: 'ph-fire'
+        },
+        {
+          key: 'bcaa',
+          name: 'BCAAs / Hydration Electrolytes',
+          dose: `${bcaaDose}g Intra-Workout Blend`,
+          timing: `${calculateChronoTime(t, 0)} (Sip Throughout Session)`,
+          desc: 'Attenuates intra-session glycogen depletion and muscular fatigue.',
+          color: 'text-ios-accent',
+          icon: 'ph-drop'
+        }
+      ];
+
+      container.innerHTML = suppItems.map(item => {
+        const isDone = appState.supplementsTaken[item.key];
+        return `
+          <div class="p-3.5 rounded-2xl border transition-all ${isDone ? 'bg-ios-card/70 border-neutral-800 opacity-60' : 'bg-ios-card border-neutral-800 shadow-md'} flex items-start justify-between">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-xl bg-ios-elevated flex items-center justify-center ${item.color} mt-0.5">
+                <i class="ph-bold ${item.icon} text-base"></i>
+              </div>
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <h4 class="text-xs font-black text-white">${item.name}</h4>
+                  <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-300 font-bold">${item.dose}</span>
+                </div>
+                <div class="text-[10px] font-bold ${item.color} flex items-center gap-1">
+                  <i class="ph-bold ph-clock"></i> ${item.timing}
+                </div>
+                <p class="text-[10px] text-neutral-400 leading-snug pt-0.5">${item.desc}</p>
+              </div>
+            </div>
+
+            <button onclick="toggleSupplementIntake('${item.key}')" class="w-7 h-7 rounded-xl flex items-center justify-center transition ml-2 flex-shrink-0 ${isDone ? 'bg-ios-neon text-black' : 'bg-ios-elevated text-neutral-500 hover:text-white'}">
+              <i class="ph-bold ph-check text-xs"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      let suppCount = Object.values(appState.supplementsTaken).filter(Boolean).length;
+      document.getElementById('ring-val-supps').textContent = `${suppCount} / 4`;
+      document.getElementById('ring-bar-supps').style.width = `${(suppCount / 4) * 100}%`;
+    }
+
+    /* =========================================================
+       15. FORM GUIDE MODAL & STEP-BY-STEP EXECUTION
+       ========================================================= */
+    const FORM_GUIDE_DB = {
+      bench_press: {
+        title: 'Barbell Bench Press',
+        setup: 'Lie with eyes directly under the bar. Retract and depress scapulae into the bench. Place feet flat on the floor with moderate arch.',
+        execution: [
+          'Unrack bar with locked elbows and stabilize over mid-chest.',
+          'Inhale deep diaphragmatic air and create intra-thoracic pressure.',
+          'Lower bar with elbows tucked 45-60 degrees until contacting sternum.',
+          'Pause 1 second in the stretched position to avoid ribcage bounce.',
+          'Drive bar upward and slightly backward towards rack position.'
+        ],
+        goldenCue: 'Think about bending the bar in half to automatically engage your lats.',
+        mistakes: 'Flaring elbows out at 90 degrees; bouncing the barbell off the chest.'
+      },
+      db_incline_press: {
+        title: 'Incline Dumbbell Press',
+        setup: 'Set bench to 30-degree incline. Kick dumbbells up to starting shoulder position.',
+        execution: [
+          'Press dumbbells vertically without clanking them together at peak.',
+          'Lower under control for 3 full seconds until dumbbells are outside ribcage.',
+          'Emphasize the deep stretch at the clavicular pec head.'
+        ],
+        goldenCue: 'Drive your biceps towards each other at the top of the contraction.',
+        mistakes: 'Setting bench incline too steep (>45 deg) shifting load to anterior delts.'
+      },
+      barbell_row: {
+        title: 'Bent-Over Barbell Row',
+        setup: 'Hinge forward at the hips at 45 degrees with knees slightly unlocked and back flat.',
+        execution: [
+          'Pull barbell into lower stomach/navel by driving elbows behind you.',
+          'Hold peak lat isometric contraction for 1 full second.',
+          'Control descent until arms are fully extended into a dead hang stretch.'
+        ],
+        goldenCue: 'Imagine pulling with your elbows rather than gripping with your forearms.',
+        mistakes: 'Using hip momentum or vertical bouncing to jerk the weight upward.'
+      },
+      lat_pulldown: {
+        title: 'Neutral-Grip Lat Pulldown',
+        setup: 'Lock thighs firmly under pads. Grip attachment with palms facing inward.',
+        execution: [
+          'Lean torso back slightly (10-15 degrees).',
+          'Depress shoulder blades before bending elbows.',
+          'Pull handle down to upper chest, pinching lats hard at bottom.'
+        ],
+        goldenCue: 'Drive your elbows into your back pockets.',
+        mistakes: 'Excessive backward swinging or turning it into a momentum pull.'
+      },
+      barbell_squat: {
+        title: 'Barbell Back Squat',
+        setup: 'Rest bar on upper traps. Feet shoulder-width apart with toes angled 15-30 degrees.',
+        execution: [
+          'Take a big belly breath and brace core as if anticipating a punch.',
+          'Break at hips and knees simultaneously, driving knees out in line with toes.',
+          'Descend below parallel into a loaded quad stretch.',
+          'Drive through the mid-foot while maintaining vertical chest posture.'
+        ],
+        goldenCue: 'Spread the floor apart with your feet throughout the whole ascent.',
+        mistakes: 'Knees caving inward (valgus collapse); heels lifting off the floor.'
+      },
+      romanian_deadlift: {
+        title: 'Barbell Romanian Deadlift (RDL)',
+        setup: 'Hold barbell with overhand grip at hip height. Feet hip-width apart.',
+        execution: [
+          'Initiate movement by pushing hips backward towards the wall behind you.',
+          'Keep bar glued against your shins throughout the descent.',
+          'Lower bar just below knee level until maximum hamstring tension is felt.',
+          'Drive hips forward to return to standing lockout without hyper-extending.'
+        ],
+        goldenCue: 'Your knees stay soft while your hips do 100% of the horizontal travel.',
+        mistakes: 'Squatting down instead of hip hinging; letting the bar drift away from shins.'
+      }
+    };
+
+    function openFormGuide(exId) {
+      playBeep('tap');
+      const data = FORM_GUIDE_DB[exId] || {
+        title: 'Exercise Execution Guide',
+        setup: 'Align joints, ensure stable foot anchoring, and brace intra-abdominal pressure.',
+        execution: [
+          'Controlled 3-second eccentric (lowering) phase.',
+          'Pause 1 second in the lengthened muscular stretch.',
+          'Explosive concentric phase without momentum assistance.'
+        ],
+        goldenCue: 'Focus entirely on the target muscle group contracting, not merely moving the weight.',
+        mistakes: 'Excessive load causing form breakdown and momentum compensation.'
+      };
+
+      document.getElementById('form-guide-title').textContent = data.title;
+      document.getElementById('form-guide-content').innerHTML = `
+        <div class="space-y-3">
+          <!-- Setup -->
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-1">
+            <span class="text-[10px] font-bold text-ios-neon uppercase block">1. Setup & Posture</span>
+            <p class="text-neutral-300 leading-relaxed">${data.setup}</p>
+          </div>
+
+          <!-- Step-by-Step Rep Execution -->
+          <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 space-y-2">
+            <span class="text-[10px] font-bold text-ios-accent uppercase block">2. Repetition Cadence</span>
+            <ul class="space-y-1.5 text-neutral-300 list-disc list-inside">
+              ${data.execution.map(step => `<li>${step}</li>`).join('')}
+            </ul>
+          </div>
+
+          <!-- Mind-Muscle Golden Cue -->
+          <div class="p-3 rounded-2xl bg-ios-neon/10 border border-ios-neon/30 space-y-1">
+            <span class="text-[10px] font-black text-ios-neon uppercase flex items-center gap-1">
+              <i class="ph-bold ph-sparkle"></i> Hypertrophy Cue
+            </span>
+            <p class="text-white font-medium italic leading-relaxed">"${data.goldenCue}"</p>
+          </div>
+
+          <!-- Mistakes to Avoid -->
+          <div class="p-3 rounded-2xl bg-ios-red/10 border border-ios-red/30 space-y-1">
+            <span class="text-[10px] font-black text-ios-red uppercase flex items-center gap-1">
+              <i class="ph-bold ph-warning-circle"></i> Common Errors
+            </span>
+            <p class="text-neutral-300 leading-relaxed">${data.mistakes}</p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('modal-form-guide')?.classList.remove('hidden');
+    }
+
+    function closeFormGuideModal() {
+      playBeep('tap');
+      document.getElementById('modal-form-guide')?.classList.add('hidden');
+    }
+
+    /* =========================================================
+       16. BARBELL PLATE CALCULATOR
+       ========================================================= */
+    function openPlateCalculatorModal(target = 70) {
+      playBeep('tap');
+      document.getElementById('slider-plate-target').value = target;
+      updatePlateCalculation(target);
+      document.getElementById('modal-plate-calculator')?.classList.remove('hidden');
+    }
+
+    function closePlateCalculatorModal() {
+      playBeep('tap');
+      document.getElementById('modal-plate-calculator')?.classList.add('hidden');
+    }
+
+    function updatePlateCalculation(totalKg) {
+      document.getElementById('plate-target-weight-label').textContent = `${totalKg} kg`;
+      const container = document.getElementById('plate-badges-container');
+      if (!container) return;
+
+      const barWeight = 20;
+      let remainingSide = Math.max(0, (totalKg - barWeight) / 2);
+      const availablePlates = [25, 20, 15, 10, 5, 2.5, 1.25];
+      const results = [];
+
+      availablePlates.forEach(p => {
+        if (remainingSide >= p) {
+          const count = Math.floor(remainingSide / p);
+          results.push({ plate: p, count });
+          remainingSide -= count * p;
+        }
+      });
+
+      if (results.length === 0) {
+        container.innerHTML = `<span class="text-neutral-400 text-xs">Empty Barbell (20kg)</span>`;
+      } else {
+        container.innerHTML = results.map(r => `
+          <span class="px-2.5 py-1 rounded-lg bg-ios-secondary border border-neutral-700 text-white font-black text-xs">
+            ${r.count} × ${r.plate} kg
+          </span>
+        `).join('');
+      }
+    }
+
+    /* =========================================================
+       16B. NATIVE IOS APP ICON GENERATION (APPLE-TOUCH-ICON)
+       ========================================================= */
+    function generateIOSAppIcon() {
+      // Create high-res 180x180 canvas matching Apple Touch Icon standard
+      const canvas = document.createElement('canvas');
+      canvas.width = 180;
+      canvas.height = 180;
+      const ctx = canvas.getContext('2d');
+
+      // 1. Sleek Dark Metallic Background with iOS Corner Radius
+      const bgGrad = ctx.createLinearGradient(0, 0, 180, 180);
+      bgGrad.addColorStop(0, '#1C1C1E');
+      bgGrad.addColorStop(0.5, '#0C0C0E');
+      bgGrad.addColorStop(1, '#000000');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 180, 180);
+
+      // 2. Subtle Radial Hypertrophy Glow
+      const glowGrad = ctx.createRadialGradient(90, 85, 10, 90, 85, 80);
+      glowGrad.addColorStop(0, 'rgba(16, 185, 129, 0.35)');
+      glowGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      ctx.fillStyle = glowGrad;
+      ctx.fillRect(0, 0, 180, 180);
+
+      // 3. Precision Neon Olympic Barbell Graphic
+      ctx.save();
+      // Outer Barbell Shaft
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(35, 90);
+      ctx.lineTo(145, 90);
+      ctx.stroke();
+
+      // Inner Knurling Grip Section (Electric Green)
+      ctx.strokeStyle = '#10B981';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(68, 90);
+      ctx.lineTo(112, 90);
+      ctx.stroke();
+
+      // Outer Olympic Plate Rings (Left & Right)
+      ctx.fillStyle = '#10B981';
+      ctx.shadowColor = 'rgba(16, 185, 129, 0.8)';
+      ctx.shadowBlur = 12;
+
+      // Left Heavy Plates
+      ctx.fillRect(44, 52, 9, 76);
+      ctx.fillRect(34, 62, 7, 56);
+      
+      // Right Heavy Plates
+      ctx.fillRect(127, 52, 9, 76);
+      ctx.fillRect(139, 62, 7, 56);
+
+      // Plate Collars
+      ctx.fillStyle = '#E5E7EB';
+      ctx.shadowBlur = 0;
+      ctx.fillRect(55, 78, 6, 24);
+      ctx.fillRect(119, 78, 6, 24);
+
+      // 4. Dynamic Hypertrophy Pulse EKG Wave across the center
+      ctx.strokeStyle = '#10B981';
+      ctx.lineWidth = 3.5;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = '#10B981';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(25, 135);
+      ctx.lineTo(65, 135);
+      ctx.lineTo(75, 120);
+      ctx.lineTo(85, 148);
+      ctx.lineTo(95, 115);
+      ctx.lineTo(105, 135);
+      ctx.lineTo(155, 135);
+      ctx.stroke();
+      ctx.restore();
+
+      // Export as PNG Data URL
+      const iconDataUrl = canvas.toDataURL('image/png');
+
+      // Update Apple Touch Icon & Favicon links in document head
+      const appleTouchEl = document.getElementById('apple-touch-icon-link');
+      if (appleTouchEl) appleTouchEl.href = iconDataUrl;
+
+      const favEl = document.getElementById('favicon-link');
+      if (favEl) favEl.href = iconDataUrl;
+
+      // Also render preview thumbnail in the PWA guide banner
+      const previewThumb = document.getElementById('pwa-icon-preview');
+      if (previewThumb) {
+        previewThumb.innerHTML = `<img src="${iconDataUrl}" alt="IronPulse Icon" class="w-full h-full object-cover">`;
+      }
+    }
+
+    /* =========================================================
+       17. INITIALIZATION ON WINDOW LOAD
+       ========================================================= */
+    window.onload = function() {
+      generateIOSAppIcon();
+      initClock();
+      renderSetupTiles();
+      renderWeeklyPlanCards();
+      updateSupersetUI();
+      renderHypertrophyLandmarks();
+      renderRecoveryHeatmap();
+      renderPRCards();
+      renderWorkoutHistoryUI();
+      renderDedicatedLogPage();
+      updateDashboardSessionSummary();
+      recalculateSupplements();
+      updateProteinUI();
+      updateRestTimerDisplay();
+
+      // Ensure active session exists on start
+      if (!appState.currentSession) {
+        generateCustomWorkout();
+      } else {
+        renderActiveLoggerUI();
+      }
+
+      renderVolumeChart();
+    };
+  </script>
+</body>
+</html>
