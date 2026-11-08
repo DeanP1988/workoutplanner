@@ -133,45 +133,49 @@
     <main id="tab-dashboard" class="tab-pane flex-1 p-4 space-y-5 animate-fadeIn">
       
       <!-- Welcome, Readiness & App Update Button -->
-      <div class="flex items-center justify-between">
-        <div>
-          <span class="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Hypertrophy Companion</span>
-          <h1 class="text-xl font-black text-white tracking-tight flex items-center gap-1.5">
-            Today's Trajectory <i class="ph-fill ph-sparkle text-ios-neon"></i>
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0 flex-1">
+          <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block truncate">Hypertrophy Companion</span>
+          <h1 class="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-1.5 truncate">
+            Today's Trajectory <i class="ph-fill ph-sparkle text-ios-neon shrink-0"></i>
           </h1>
         </div>
-        <div class="flex items-center gap-1.5">
-          <!-- Check GitHub for Updates Button -->
-          <button onclick="checkForGitHubAppUpdate()" id="btn-check-update" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-neon font-semibold flex items-center gap-1 hover:bg-ios-elevated active:scale-95 transition" title="Check GitHub for Updates">
-            <i id="update-btn-icon" class="ph-bold ph-arrows-clockwise text-xs"></i>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <!-- Check GitHub for Updates Button (taller, narrower) -->
+          <button onclick="checkForGitHubAppUpdate()" id="btn-check-update" class="px-2 py-2 rounded-xl bg-ios-card border border-neutral-800 text-[10px] text-ios-neon font-semibold flex flex-col items-center justify-center leading-none min-w-[50px] min-h-[44px] hover:bg-ios-elevated active:scale-95 transition" title="Check GitHub for Updates">
+            <i id="update-btn-icon" class="ph-bold ph-arrows-clockwise text-sm mb-0.5"></i>
             <span id="update-btn-text">Update</span>
           </button>
-          <button onclick="switchTab('plan')" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-accent font-semibold flex items-center gap-1 hover:bg-ios-elevated transition">
-            <i class="ph-bold ph-sliders-horizontal"></i> Split Setup
+          <!-- Split Setup Button (taller, narrower) -->
+          <button onclick="switchTab('plan')" class="px-2 py-2 rounded-xl bg-ios-card border border-neutral-800 text-[10px] text-ios-accent font-semibold flex flex-col items-center justify-center leading-none min-w-[54px] min-h-[44px] hover:bg-ios-elevated transition">
+            <i class="ph-bold ph-sliders-horizontal text-sm mb-0.5"></i>
+            <span>Split Setup</span>
           </button>
         </div>
       </div>
 
       <!-- Scheduled Session Card (Previous Trajectory View) -->
       <div class="bg-gradient-to-r from-ios-card via-ios-elevated to-ios-card rounded-3xl p-4 border border-neutral-800 shadow-lg space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="ph-bold ph-calendar text-ios-neon text-lg"></i>
-            <div>
-              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Upcoming Session</span>
-              <h2 class="text-sm font-black text-white" id="dashboard-session-name">Push Hypertrophy Focus</h2>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="ph-bold ph-calendar text-ios-neon text-lg shrink-0"></i>
+            <div class="min-w-0">
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block truncate">Upcoming Session</span>
+              <h2 class="text-xs sm:text-sm font-black text-white truncate" id="dashboard-session-name">Push Hypertrophy Focus</h2>
             </div>
           </div>
-          <span class="text-[10px] font-bold text-ios-neon px-2 py-0.5 rounded-full bg-ios-neon/10 border border-ios-neon/30" id="dashboard-scheduled-time">Today • 18:00</span>
+          <div class="shrink-0 flex items-center justify-center">
+            <span class="text-[10px] font-bold text-ios-neon px-2.5 py-1 rounded-full bg-ios-neon/10 border border-ios-neon/30 text-center inline-flex items-center justify-center whitespace-nowrap" id="dashboard-scheduled-time">Today • 18:00</span>
+          </div>
         </div>
 
-        <div class="flex items-center justify-between pt-1">
-          <div class="flex flex-wrap gap-1" id="dashboard-muscle-badges">
+        <div class="flex items-center justify-between pt-1 gap-2">
+          <div class="flex flex-wrap gap-1 min-w-0" id="dashboard-muscle-badges">
             <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300">Chest</span>
             <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300">Shoulders</span>
             <span class="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-neutral-800 text-neutral-300">Triceps</span>
           </div>
-          <button onclick="switchTab('train')" class="px-3 py-1.5 rounded-xl bg-ios-neon text-black font-black text-xs uppercase tracking-wider shadow-glow-green active:scale-95 transition flex items-center gap-1">
+          <button onclick="switchTab('train')" class="px-3 py-2 rounded-xl bg-ios-neon text-black font-black text-xs uppercase tracking-wider shadow-glow-green active:scale-95 transition flex items-center gap-1 shrink-0">
             Start Session <i class="ph-bold ph-arrow-right"></i>
           </button>
         </div>
@@ -179,18 +183,18 @@
 
       <!-- Apple Fitness Style 3 Activity Rings Card -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 shadow-lg space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="ph-fill ph-circle-notch text-ios-neon text-lg"></i>
-            <h2 class="text-xs font-black text-white uppercase tracking-wider">Daily Hypertrophy Rings</h2>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="ph-fill ph-circle-notch text-ios-neon text-lg shrink-0"></i>
+            <h2 class="text-xs font-black text-white uppercase tracking-wider truncate">Daily Hypertrophy Rings</h2>
           </div>
-          <span class="text-[10px] text-neutral-400 font-bold" id="rings-percentage-label">68% Complete</span>
+          <span class="text-[10px] text-neutral-400 font-bold shrink-0" id="rings-percentage-label">68% Complete</span>
         </div>
 
         <div class="grid grid-cols-3 gap-2">
           <!-- Ring 1: Workout -->
           <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 text-center space-y-1">
-            <div class="text-[10px] font-bold text-neutral-400">Workout</div>
+            <div class="text-[10px] font-bold text-neutral-400 truncate">Workout</div>
             <div class="text-base font-black text-ios-neon" id="ring-val-workout">1 / 1</div>
             <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
               <div id="ring-bar-workout" class="bg-ios-neon h-full transition-all duration-500" style="width: 100%;"></div>
@@ -199,7 +203,7 @@
 
           <!-- Ring 2: Protein -->
           <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 text-center space-y-1">
-            <div class="text-[10px] font-bold text-neutral-400">Protein</div>
+            <div class="text-[10px] font-bold text-neutral-400 truncate">Protein</div>
             <div class="text-base font-black text-ios-purple" id="ring-val-protein">120g</div>
             <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
               <div id="ring-bar-protein" class="bg-ios-purple h-full transition-all duration-500" style="width: 70%;"></div>
@@ -208,7 +212,7 @@
 
           <!-- Ring 3: Supplements -->
           <div class="p-3 rounded-2xl bg-ios-elevated/70 border border-neutral-800 text-center space-y-1">
-            <div class="text-[10px] font-bold text-neutral-400">Supps</div>
+            <div class="text-[10px] font-bold text-neutral-400 truncate">Supps</div>
             <div class="text-base font-black text-ios-accent" id="ring-val-supps">3 / 4</div>
             <div class="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
               <div id="ring-bar-supps" class="bg-ios-accent h-full transition-all duration-500" style="width: 75%;"></div>
@@ -219,17 +223,17 @@
 
       <!-- Quick Protein Logger Bar -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-ios-purple/20 flex items-center justify-center text-ios-purple">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-7 h-7 rounded-lg bg-ios-purple/20 flex items-center justify-center text-ios-purple shrink-0">
               <i class="ph-bold ph-fork-knife"></i>
             </div>
-            <div>
-              <span class="text-[10px] font-bold text-neutral-400 uppercase">Protein Target</span>
-              <h3 class="text-xs font-black text-white" id="protein-progress-counter">120g / 170g Target</h3>
+            <div class="min-w-0">
+              <span class="text-[10px] font-bold text-neutral-400 uppercase block truncate">Protein Target</span>
+              <h3 class="text-xs font-black text-white truncate" id="protein-progress-counter">120g / 170g Target</h3>
             </div>
           </div>
-          <span class="text-xs font-mono font-bold text-ios-purple" id="protein-remaining-label">50g left</span>
+          <span class="text-xs font-mono font-bold text-ios-purple shrink-0" id="protein-remaining-label">50g left</span>
         </div>
 
         <!-- Progress Bar -->
@@ -239,13 +243,13 @@
 
         <!-- Quick Log Buttons -->
         <div class="flex items-center gap-2 pt-1">
-          <button onclick="quickAddProtein(10)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition">
+          <button onclick="quickAddProtein(10)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition truncate">
             +10g Snack
           </button>
-          <button onclick="quickAddProtein(25)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition">
+          <button onclick="quickAddProtein(25)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition truncate">
             +25g Shake
           </button>
-          <button onclick="quickAddProtein(40)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition">
+          <button onclick="quickAddProtein(40)" class="flex-1 py-1.5 rounded-xl bg-ios-elevated border border-neutral-700/80 text-[11px] font-bold text-neutral-300 active:scale-95 transition truncate">
             +40g Meal
           </button>
         </div>
@@ -253,16 +257,16 @@
 
       <!-- Multi-Timeframe Volume Analytics (Daily / Weekly / Monthly) -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-bold text-neutral-400 uppercase">Hypertrophy Analytics</span>
-            <h3 class="text-sm font-black text-white flex items-center gap-1.5">
-              Volume Progression <i class="ph-bold ph-trend-up text-ios-neon"></i>
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase block truncate">Hypertrophy Analytics</span>
+            <h3 class="text-xs sm:text-sm font-black text-white flex items-center gap-1.5 truncate">
+              Volume Progression <i class="ph-bold ph-trend-up text-ios-neon shrink-0"></i>
             </h3>
           </div>
           
           <!-- Segmented Control for Timeframe -->
-          <div class="flex bg-black/60 p-1 rounded-xl border border-neutral-800 text-[10px] font-bold">
+          <div class="flex bg-black/60 p-1 rounded-xl border border-neutral-800 text-[10px] font-bold shrink-0">
             <button id="btn-tf-daily" onclick="setTimeframe('daily')" class="px-2.5 py-1 rounded-lg bg-ios-elevated text-white transition">Daily</button>
             <button id="btn-tf-weekly" onclick="setTimeframe('weekly')" class="px-2.5 py-1 rounded-lg text-neutral-400 transition hover:text-white">Weekly</button>
             <button id="btn-tf-monthly" onclick="setTimeframe('monthly')" class="px-2.5 py-1 rounded-lg text-neutral-400 transition hover:text-white">Monthly</button>
@@ -292,14 +296,14 @@
 
       <!-- Weekly Hypertrophy Landmarks (MEV / MAV / MRV) Tracker -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-bold text-neutral-400 uppercase">Hypertrophy Volume Landmarks</span>
-            <h3 class="text-xs font-black text-white flex items-center gap-1.5">
-              Weekly Set Thresholds (RP Science) <i class="ph-bold ph-shield-check text-ios-neon"></i>
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase block truncate">Hypertrophy Volume Landmarks</span>
+            <h3 class="text-xs font-black text-white flex items-center gap-1.5 truncate">
+              Weekly Set Thresholds <i class="ph-bold ph-shield-check text-ios-neon shrink-0"></i>
             </h3>
           </div>
-          <span class="text-[9px] font-mono text-neutral-400">Target: 10-20 Sets</span>
+          <span class="text-[9px] font-mono text-neutral-400 shrink-0">10-20 Sets</span>
         </div>
 
         <!-- Landmarks List for Primary Muscle Groups -->
@@ -310,12 +314,12 @@
 
       <!-- Muscle Recovery Heatmap (Biological 48h Window) -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-bold text-neutral-400 uppercase">Recovery Readiness</span>
-            <h3 class="text-xs font-black text-white">Muscle Group Latency (48h MPS)</h3>
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase block truncate">Recovery Readiness</span>
+            <h3 class="text-xs font-black text-white truncate">Muscle Group Latency (48h MPS)</h3>
           </div>
-          <span class="text-[10px] text-ios-neon font-bold">Optimal Window</span>
+          <span class="text-[10px] text-ios-neon font-bold shrink-0">Optimal Window</span>
         </div>
 
         <div class="grid grid-cols-2 gap-2" id="recovery-heatmap-container">
@@ -325,14 +329,14 @@
 
       <!-- Personal Records (PRs & 1RM Hall of Fame) -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <span class="text-[10px] font-bold text-neutral-400 uppercase">Strength Milestone</span>
-            <h3 class="text-xs font-black text-white flex items-center gap-1">
-              Estimated 1RM PRs <i class="ph-fill ph-trophy text-yellow-400"></i>
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase block truncate">Strength Milestone</span>
+            <h3 class="text-xs font-black text-white flex items-center gap-1 truncate">
+              Estimated 1RM PRs <i class="ph-fill ph-trophy text-yellow-400 shrink-0"></i>
             </h3>
           </div>
-          <button onclick="openPRModal()" class="text-[10px] text-ios-accent font-semibold hover:underline">Update</button>
+          <button onclick="openPRModal()" class="text-[10px] text-ios-accent font-semibold hover:underline shrink-0">Update</button>
         </div>
 
         <div class="grid grid-cols-4 gap-2 text-center" id="pr-cards-container">
@@ -342,15 +346,15 @@
 
       <!-- Previous Sessions History Log Button & Preview -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="ph-bold ph-clock-counter-clockwise text-ios-accent text-lg"></i>
-            <div>
-              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Training History</span>
-              <h3 class="text-xs font-black text-white">Previous Gym Sessions Log</h3>
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="ph-bold ph-clock-counter-clockwise text-ios-accent text-lg shrink-0"></i>
+            <div class="min-w-0">
+              <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block truncate">Training History</span>
+              <h3 class="text-xs font-black text-white truncate">Previous Gym Sessions Log</h3>
             </div>
           </div>
-          <button onclick="openWorkoutHistoryModal()" class="px-2.5 py-1 rounded-xl bg-ios-elevated border border-neutral-700 text-[10px] font-bold text-ios-accent hover:bg-neutral-800 transition">
+          <button onclick="openWorkoutHistoryModal()" class="px-2.5 py-1 rounded-xl bg-ios-elevated border border-neutral-700 text-[10px] font-bold text-ios-accent hover:bg-neutral-800 transition shrink-0">
             View All Logs
           </button>
         </div>
