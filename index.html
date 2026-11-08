@@ -122,19 +122,7 @@
 <body class="bg-black text-white antialiased min-h-screen flex flex-col items-center justify-start pb-16">
 
   <!-- Mobile Viewport Wrapper (iPhone Scaled Container) -->
-  <div class="w-full max-w-md min-h-screen flex flex-col bg-black relative">
-
-    <!-- Top iOS Status Bar (Native Feel) -->
-    <header class="sticky top-0 z-40 bg-black/85 backdrop-blur-md px-6 pt-3 pb-2 flex items-center justify-between border-b border-neutral-900">
-      <div class="flex items-center gap-1.5 font-bold text-xs tracking-tight text-white" id="clock-time">
-        09:41
-      </div>
-      <div class="flex items-center gap-2 text-neutral-300 text-xs">
-        <i class="ph-bold ph-chart-bar"></i>
-        <i class="ph-bold ph-wifi-high"></i>
-        <i class="ph-fill ph-battery-full text-ios-neon text-sm"></i>
-      </div>
-    </header>
+  <div class="w-full max-w-md min-h-screen flex flex-col bg-black relative pt-3">
 
     <!-- Tab 1: DASHBOARD & TRAJECTORY VIEW -->
     <main id="tab-dashboard" class="tab-pane flex-1 p-4 space-y-5 animate-fadeIn">
@@ -149,22 +137,6 @@
         </div>
         <button onclick="switchTab('plan')" class="px-2.5 py-1.5 rounded-xl bg-ios-card border border-neutral-800 text-[11px] text-ios-accent font-semibold flex items-center gap-1 hover:bg-ios-elevated transition">
           <i class="ph-bold ph-sliders-horizontal"></i> Split Setup
-        </button>
-      </div>
-
-      <!-- iOS Home Screen Banner (Dismissible Tip) -->
-      <div id="ios-pwa-tip" class="p-3 rounded-2xl bg-gradient-to-r from-ios-card via-ios-elevated to-ios-card border border-neutral-800/90 flex items-center justify-between text-xs">
-        <div class="flex items-center gap-2.5">
-          <div id="pwa-icon-preview" class="w-9 h-9 rounded-xl overflow-hidden shadow-glow-green border border-ios-neon/30 flex-shrink-0">
-            <!-- Rendered icon thumbnail -->
-          </div>
-          <div>
-            <span class="text-[10px] font-bold text-ios-neon uppercase block">Add to iPhone Home Screen</span>
-            <span class="text-[11px] text-neutral-300">Tap <i class="ph-bold ph-export text-ios-accent"></i> in Safari & choose <b>"Add to Home Screen"</b></span>
-          </div>
-        </div>
-        <button onclick="document.getElementById('ios-pwa-tip').remove()" class="text-neutral-500 hover:text-white p-1">
-          <i class="ph-bold ph-x text-sm"></i>
         </button>
       </div>
 
@@ -396,7 +368,26 @@
           </button>
         </div>
 
-        <!-- NEW: Real-Time Workout Guidance "Now & Next" Banner -->
+        <!-- NEW: RIR Effort Tracking Toggle Switch -->
+        <div class="p-2.5 rounded-2xl bg-ios-elevated/60 border border-neutral-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-lg bg-neutral-800 flex items-center justify-center text-ios-orange">
+              <i class="ph-bold ph-gauge text-xs"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-white">Track RIR (Reps in Reserve)</span>
+                <span id="rir-mode-badge" class="text-[8px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400">OFF</span>
+              </div>
+              <span class="text-[9px] text-neutral-400">Turn on when ready to log reserve reps before failure</span>
+            </div>
+          </div>
+          <button onclick="toggleRIRTracking()" id="btn-toggle-rir" class="w-11 h-6 bg-neutral-800 rounded-full p-0.5 transition-colors duration-200 ease-in-out relative flex items-center flex-shrink-0">
+            <span id="rir-toggle-knob" class="w-5 h-5 bg-neutral-400 rounded-full transition-transform duration-200 ease-in-out transform translate-x-0"></span>
+          </button>
+        </div>
+
+        <!-- Real-Time Workout Guidance "Now & Next" Banner -->
         <div class="p-3 rounded-2xl bg-gradient-to-r from-neutral-900 via-ios-elevated to-neutral-900 border border-neutral-800 space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-bold text-ios-neon uppercase tracking-wider flex items-center gap-1.5">
@@ -589,6 +580,10 @@
               <path id="path-biceps-left" class="muscle-path" onclick="toggleMuscleFromMap('biceps')" d="M60 90 Q54 110 62 125 Q70 115 66 95 Z" />
               <path id="path-biceps-right" class="muscle-path" onclick="toggleMuscleFromMap('biceps')" d="M140 90 Q146 110 138 125 Q130 115 134 95 Z" />
 
+              <!-- Forearms (Front View) -->
+              <path id="path-forearms-left" class="muscle-path" onclick="toggleMuscleFromMap('forearms')" d="M60 127 Q52 150 56 175 Q65 175 66 127 Z" />
+              <path id="path-forearms-right" class="muscle-path" onclick="toggleMuscleFromMap('forearms')" d="M140 127 Q148 150 144 175 Q135 175 134 127 Z" />
+
               <!-- Quads -->
               <path id="path-quads-left" class="muscle-path" onclick="toggleMuscleFromMap('quads')" d="M80 145 Q70 190 76 225 Q92 225 94 150 Z" />
               <path id="path-quads-right" class="muscle-path" onclick="toggleMuscleFromMap('quads')" d="M120 145 Q130 190 124 225 Q108 225 106 150 Z" />
@@ -613,6 +608,10 @@
               <!-- Triceps -->
               <path id="path-triceps-left" class="muscle-path" onclick="toggleMuscleFromMap('triceps')" d="M59 90 Q54 110 61 125 Q68 115 65 95 Z" />
               <path id="path-triceps-right" class="muscle-path" onclick="toggleMuscleFromMap('triceps')" d="M141 90 Q146 110 139 125 Q132 115 135 95 Z" />
+
+              <!-- Forearms (Back View) -->
+              <path id="path-forearms-back-left" class="muscle-path" onclick="toggleMuscleFromMap('forearms')" d="M59 127 Q50 150 55 175 Q64 175 66 127 Z" />
+              <path id="path-forearms-back-right" class="muscle-path" onclick="toggleMuscleFromMap('forearms')" d="M141 127 Q150 150 145 175 Q136 175 134 127 Z" />
 
               <!-- Glutes -->
               <path id="path-glutes" class="muscle-path" onclick="toggleMuscleFromMap('glutes')" d="M78 140 Q100 142 100 165 Q78 165 74 145 Z M122 140 Q100 142 100 165 Q122 165 126 145 Z" />
@@ -986,6 +985,7 @@
       { id: 'shoulders', name: 'Deltoids', view: 'front' },
       { id: 'biceps', name: 'Biceps Brachii', view: 'front' },
       { id: 'triceps', name: 'Triceps Brachii', view: 'back' },
+      { id: 'forearms', name: 'Forearms (Grip)', view: 'front' },
       { id: 'quads', name: 'Quadriceps', view: 'front' },
       { id: 'hamstrings', name: 'Hamstrings', view: 'back' },
       { id: 'glutes', name: 'Gluteus Max', view: 'back' },
@@ -1017,6 +1017,10 @@
       { id: 'skull_crushers', name: 'Barbell Lying Triceps Extension', muscle: 'triceps', equipment: ['barbell', 'bench'], compound: false, targetReps: '10-12', tip: 'Lie flat on the bench holding the bar above your eyes. Bend only your elbows to lower the bar just behind the top of your head, then straighten your arms back up.' },
       { id: 'cable_tricep_pushdown', name: 'Cable Rope Triceps Pushdown', muscle: 'triceps', equipment: ['cables'], compound: false, targetReps: '12-15', tip: 'Keep your elbows tucked into your sides. Push the rope all the way down until your arms are straight, pull the rope ends apart, and squeeze the back of your arms.' },
 
+      // FOREARMS
+      { id: 'wrist_curl', name: 'Seated Barbell Wrist Curl', muscle: 'forearms', equipment: ['barbell', 'bench'], compound: false, targetReps: '12-15', tip: 'Rest your forearms across your thighs or a flat bench with wrists hanging over the edge. Curl your wrists upward, pause, then lower the bar with control.' },
+      { id: 'reverse_cable_curl', name: 'Reverse Grip Cable Curl', muscle: 'forearms', equipment: ['cables'], compound: false, targetReps: '12-15', tip: 'Grip the cable bar with your palms facing down. Curl up toward your chest to build forearm thickness and brachioradialis strength.' },
+
       // LEGS & LOWER BODY
       { id: 'barbell_squat', name: 'Barbell Back Squat', muscle: 'quads', equipment: ['barbell'], compound: true, targetReps: '6-8', tip: 'Rest the bar across your upper back. Sit your hips back and down like sitting into a low chair, keep your chest up, and push through your whole foot to stand back up.' },
       { id: 'leg_press', name: 'Incline Leg Press Sled', muscle: 'quads', equipment: ['legpress'], compound: true, targetReps: '10-12', tip: 'Place your feet flat on the sled, shoulder-width apart. Lower the weight slowly until your knees are bent at 90 degrees, then press back up without snapping your knees straight.' },
@@ -1039,6 +1043,7 @@
       scheduledDate: new Date().toISOString().split('T')[0],
       splitFrequency: 4,
       supersetMode: false,
+      trackRir: false,
       availableEquipment: ['barbell', 'dumbbell', 'cables', 'bench', 'pullup', 'smith', 'legpress', 'bodyweight'],
       selectedMuscles: ['chest', 'back', 'shoulders', 'biceps', 'triceps'],
       weeklyPlan: null, // Initialized with companion suggestions
@@ -1255,18 +1260,6 @@
     /* =========================================================
        5. CLOCK & TOAST UTILITIES
        ========================================================= */
-    function initClock() {
-      function update() {
-        const d = new Date();
-        const hrs = String(d.getHours()).padStart(2, '0');
-        const mins = String(d.getMinutes()).padStart(2, '0');
-        const el = document.getElementById('clock-time');
-        if (el) el.textContent = `${hrs}:${mins}`;
-      }
-      update();
-      setInterval(update, 10000);
-    }
-
     let toastTimeout = null;
     function showToast(msg, icon = 'ph-check') {
       const box = document.getElementById('toast-box');
@@ -1378,6 +1371,12 @@
         if (m === 'triceps') {
           document.getElementById('path-triceps-left')?.classList.add('active');
           document.getElementById('path-triceps-right')?.classList.add('active');
+        }
+        if (m === 'forearms') {
+          document.getElementById('path-forearms-left')?.classList.add('active');
+          document.getElementById('path-forearms-right')?.classList.add('active');
+          document.getElementById('path-forearms-back-left')?.classList.add('active');
+          document.getElementById('path-forearms-back-right')?.classList.add('active');
         }
         if (m === 'core') document.getElementById('path-core')?.classList.add('active');
         if (m === 'back') document.getElementById('path-back')?.classList.add('active');
@@ -2018,89 +2017,96 @@
           coveredMuscles.add(item.exercise.muscle);
         }
       }
+
+      // If fewer than 4 exercises, fill from remaining top scored
       for (const item of scored) {
-        if (!picked.some(p => p.id === item.exercise.id) && picked.length < 5) {
+        if (picked.length >= 4) break;
+        if (!picked.some(p => p.id === item.exercise.id)) {
           picked.push(item.exercise);
         }
       }
 
-      // If Antagonist Supersets mode is active, pair opposing muscles (Chest+Back, Biceps+Triceps, Quads+Hamstrings)
-      if (appState.supersetMode && picked.length >= 2) {
+      // Group into antagonist supersets if superset mode is active
+      if (appState.supersetMode) {
         const opposingPairs = [
           ['chest', 'back'],
           ['biceps', 'triceps'],
           ['quads', 'hamstrings']
         ];
-        
-        // Re-order picked exercises to place opposing muscle pairs back-to-back
-        const paired = [];
-        const remaining = [...picked];
-
+        let pairIndex = 1;
         opposingPairs.forEach(pair => {
-          const firstIdx = remaining.findIndex(e => e.muscle === pair[0]);
-          const secondIdx = remaining.findIndex(e => e.muscle === pair[1]);
-          if (firstIdx !== -1 && secondIdx !== -1) {
-            const e1 = remaining[firstIdx];
-            const e2 = remaining[secondIdx];
-            e1.supersetGroup = 'Pair A';
-            e2.supersetGroup = 'Pair A';
-            paired.push(e1, e2);
+          const m1 = picked.find(e => e.muscle === pair[0]);
+          const m2 = picked.find(e => e.muscle === pair[1]);
+          if (m1 && m2) {
+            m1.supersetGroup = `Pair ${pairIndex}A`;
+            m2.supersetGroup = `Pair ${pairIndex}B`;
+            pairIndex++;
           }
         });
-
-        // Add remaining unpaired exercises
-        remaining.forEach(e => {
-          if (!paired.some(p => p.id === e.id)) {
-            e.supersetGroup = null;
-            paired.push(e);
-          }
-        });
-
-        if (paired.length > 0) {
-          picked.length = 0;
-          picked.push(...paired);
-        }
-      } else {
-        picked.forEach(e => e.supersetGroup = null);
       }
 
-      const defaultTitle = `Target: ${appState.selectedMuscles.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(' • ')}`;
+      const sessionTitle = customTitle || (forDay ? `${forDay} Hypertrophy Session` : 'Custom Hypertrophy Workout');
 
       appState.currentSession = {
-        title: customTitle || defaultTitle,
+        title: sessionTitle,
         forDay: forDay || null,
         exercises: picked
       };
 
-      appState.lastUsedExerciseIds = picked.map(p => p.id);
+      appState.lastUsedExerciseIds = picked.map(e => e.id);
 
-      // Populate sets structure with smart baseline weight & warmups
+      // Initialize sets with remembered baseline weights
       picked.forEach(ex => {
-        if (!appState.loggedSets[ex.id]) {
-          const baselineData = appState.exerciseBaselines && appState.exerciseBaselines[ex.id];
-          const workingLoad = baselineData ? baselineData.workingWeight : (ex.compound ? 50 : 15);
-          const warmUpLoad = Math.max(20, Math.round((workingLoad * 0.6) / 2.5) * 2.5);
+        const baseline = appState.exerciseBaselines && appState.exerciseBaselines[ex.id];
+        let workingWeight = baseline ? baseline.workingWeight : (ex.compound ? 60 : 15);
+        let reps = ex.compound ? 8 : 12;
 
-          // Check if progressive step-up is ready based on previous session reps
-          let suggestedWorkingLoad = workingLoad;
-          if (baselineData && baselineData.lastReps >= (ex.compound ? 8 : 12)) {
-            const stepIncrement = ex.compound ? 2.5 : 1.25;
-            suggestedWorkingLoad = workingLoad + stepIncrement;
-          }
-
-          appState.loggedSets[ex.id] = [
-            { setNum: 1, type: 'W', weight: warmUpLoad, reps: 10, rir: 3, completed: false },
-            { setNum: 2, type: 'N', weight: suggestedWorkingLoad, reps: 8, rir: 2, completed: false },
-            { setNum: 3, type: 'N', weight: suggestedWorkingLoad, reps: 8, rir: 1, completed: false }
-          ];
+        // Auto step-up if lifter conquered the previous target
+        if (baseline && baseline.lastReps >= (ex.compound ? 8 : 12) && baseline.lastRir <= 2) {
+          workingWeight += ex.compound ? 2.5 : 1.25;
         }
+
+        const warmUpWeight = Math.max(20, Math.round((workingWeight * 0.6) / 2.5) * 2.5);
+
+        appState.loggedSets[ex.id] = [
+          { setNum: 1, type: 'W', weight: warmUpWeight, reps: 10, rir: 3, completed: false },
+          { setNum: 2, type: 'N', weight: workingWeight, reps: reps, rir: 2, completed: false },
+          { setNum: 3, type: 'N', weight: workingWeight, reps: reps, rir: 2, completed: false }
+        ];
       });
 
       saveState();
       renderActiveLoggerUI();
-      switchTab('train');
       updateDashboardSessionSummary();
-      showToast('Workout Ready for Today!');
+      showToast('New customized session generated!');
+    }
+
+    function toggleRIRTracking() {
+      playBeep('tap');
+      appState.trackRir = !appState.trackRir;
+      saveState();
+      updateRIRToggleUI();
+      renderActiveLoggerUI();
+      showToast(`RIR Tracking: ${appState.trackRir ? 'ON' : 'OFF (Simplified)'}`);
+    }
+
+    function updateRIRToggleUI() {
+      const badge = document.getElementById('rir-mode-badge');
+      const knob = document.getElementById('rir-toggle-knob');
+      const btn = document.getElementById('btn-toggle-rir');
+      if (!badge || !knob || !btn) return;
+
+      if (appState.trackRir) {
+        badge.textContent = 'ON';
+        badge.className = 'text-[8px] font-bold px-1.5 py-0.2 rounded bg-ios-orange/20 text-ios-orange border border-ios-orange/30';
+        btn.className = 'w-11 h-6 bg-ios-orange rounded-full p-0.5 transition-colors duration-200 ease-in-out relative flex items-center flex-shrink-0';
+        knob.className = 'w-5 h-5 bg-black rounded-full transition-transform duration-200 ease-in-out transform translate-x-5';
+      } else {
+        badge.textContent = 'OFF';
+        badge.className = 'text-[8px] font-bold px-1.5 py-0.2 rounded bg-neutral-800 text-neutral-400';
+        btn.className = 'w-11 h-6 bg-neutral-800 rounded-full p-0.5 transition-colors duration-200 ease-in-out relative flex items-center flex-shrink-0';
+        knob.className = 'w-5 h-5 bg-neutral-400 rounded-full transition-transform duration-200 ease-in-out transform translate-x-0';
+      }
     }
 
     function renderActiveLoggerUI() {
@@ -2193,6 +2199,24 @@
           `;
         }
 
+        const showRIR = !!appState.trackRir;
+        const tableHeaderCols = showRIR ? `
+          <div class="grid grid-cols-12 gap-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider text-center px-1">
+            <span class="col-span-2 text-left">Set</span>
+            <span class="col-span-3">Weight</span>
+            <span class="col-span-3">Reps</span>
+            <span class="col-span-2">RIR</span>
+            <span class="col-span-2 text-right">Done</span>
+          </div>
+        ` : `
+          <div class="grid grid-cols-12 gap-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider text-center px-1">
+            <span class="col-span-2 text-left">Set</span>
+            <span class="col-span-4">Weight (kg)</span>
+            <span class="col-span-4">Reps</span>
+            <span class="col-span-2 text-right">Done</span>
+          </div>
+        `;
+
         return `
           <div class="bg-ios-card rounded-3xl p-4 border transition-all duration-300 space-y-3 shadow-md ${isCurrentExerciseCard ? 'border-ios-neon/60 bg-gradient-to-b from-ios-card to-ios-elevated ring-1 ring-ios-neon/30' : allCompleted ? 'border-neutral-800/60 opacity-70' : 'border-neutral-800'}">
             
@@ -2231,70 +2255,109 @@
             </div>
 
             <!-- Set Table Header -->
-            <div class="grid grid-cols-12 gap-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider text-center px-1">
-              <span class="col-span-2 text-left">Set</span>
-              <span class="col-span-3">Weight</span>
-              <span class="col-span-3">Reps</span>
-              <span class="col-span-2">RIR</span>
-              <span class="col-span-2 text-right">Done</span>
-            </div>
+            ${tableHeaderCols}
 
             <!-- Set Rows -->
             <div class="space-y-1.5">
               ${sets.map((set, sIdx) => {
                 const isExactActiveSet = foundCurrent && exIdx === currentExIndex && sIdx === currentSetIndex;
 
+                if (showRIR) {
+                  return `
+                  <div class="grid grid-cols-12 gap-1 items-center p-1.5 rounded-xl transition-all ${
+                    isExactActiveSet 
+                      ? 'bg-ios-neon/15 border-2 border-ios-neon ring-2 ring-ios-neon/20 shadow-glow-green' 
+                      : set.completed 
+                      ? 'bg-ios-neon/10 border border-ios-neon/30' 
+                      : 'bg-ios-elevated border border-neutral-800'
+                  } text-xs">
+                    
+                    <!-- Set Type Badge -->
+                    <div class="col-span-2 flex items-center gap-1">
+                      <button onclick="cycleSetType('${ex.id}', ${sIdx})" class="w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center ${getSetTypeBadgeClass(set.type)}">
+                        ${set.type}
+                      </button>
+                      ${isExactActiveSet ? '<span class="text-[8px] font-black text-ios-neon uppercase">NOW</span>' : ''}
+                    </div>
+
+                    <!-- Weight Input -->
+                    <div class="col-span-3 flex items-center justify-center">
+                      <input type="number" step="0.5" value="${set.weight}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'weight', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
+                    </div>
+
+                    <!-- Reps Input -->
+                    <div class="col-span-3 flex items-center justify-center">
+                      <input type="number" value="${set.reps}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'reps', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
+                    </div>
+
+                    <!-- RIR Selector -->
+                    <div class="col-span-2 flex items-center justify-center">
+                      <select onchange="updateSetVal('${ex.id}', ${sIdx}, 'rir', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-neutral-300 rounded-lg py-1 border border-neutral-700 text-[10px] focus:outline-none">
+                        <option value="0" ${set.rir == 0 ? 'selected' : ''}>0</option>
+                        <option value="1" ${set.rir == 1 ? 'selected' : ''}>1</option>
+                        <option value="2" ${set.rir == 2 ? 'selected' : ''}>2</option>
+                        <option value="3" ${set.rir == 3 ? 'selected' : ''}>3</option>
+                      </select>
+                    </div>
+
+                    <!-- Complete Checkbox -->
+                    <div class="col-span-2 flex items-center justify-end">
+                      <button onclick="toggleSetComplete('${ex.id}', ${sIdx})" class="w-7 h-7 rounded-xl flex items-center justify-center transition ${
+                        set.completed 
+                          ? 'bg-ios-neon text-black shadow-glow-green' 
+                          : isExactActiveSet
+                          ? 'bg-ios-neon/30 text-ios-neon border border-ios-neon hover:bg-ios-neon hover:text-black animate-pulse'
+                          : 'bg-neutral-800 text-neutral-500 hover:text-white'
+                      }">
+                        <i class="ph-bold ph-check text-sm"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;}
+
+                // Simplified View (No RIR Column)
                 return `
-                <div class="grid grid-cols-12 gap-1 items-center p-1.5 rounded-xl transition-all ${
-                  isExactActiveSet 
-                    ? 'bg-ios-neon/15 border-2 border-ios-neon ring-2 ring-ios-neon/20 shadow-glow-green' 
-                    : set.completed 
-                    ? 'bg-ios-neon/10 border border-ios-neon/30' 
-                    : 'bg-ios-elevated border border-neutral-800'
-                } text-xs">
-                  
-                  <!-- Set Type Badge (Cycles W -> N -> D -> F) -->
-                  <div class="col-span-2 flex items-center gap-1">
-                    <button onclick="cycleSetType('${ex.id}', ${sIdx})" class="w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center ${getSetTypeBadgeClass(set.type)}">
-                      ${set.type}
-                    </button>
-                    ${isExactActiveSet ? '<span class="text-[8px] font-black text-ios-neon uppercase">NOW</span>' : ''}
-                  </div>
+                  <div class="grid grid-cols-12 gap-1 items-center p-1.5 rounded-xl transition-all ${
+                    isExactActiveSet 
+                      ? 'bg-ios-neon/15 border-2 border-ios-neon ring-2 ring-ios-neon/20 shadow-glow-green' 
+                      : set.completed 
+                      ? 'bg-ios-neon/10 border border-ios-neon/30' 
+                      : 'bg-ios-elevated border border-neutral-800'
+                  } text-xs">
+                    
+                    <!-- Set Type Badge -->
+                    <div class="col-span-2 flex items-center gap-1">
+                      <button onclick="cycleSetType('${ex.id}', ${sIdx})" class="w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center ${getSetTypeBadgeClass(set.type)}">
+                        ${set.type}
+                      </button>
+                      ${isExactActiveSet ? '<span class="text-[8px] font-black text-ios-neon uppercase">NOW</span>' : ''}
+                    </div>
 
-                  <!-- Weight Input -->
-                  <div class="col-span-3 flex items-center justify-center">
-                    <input type="number" step="0.5" value="${set.weight}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'weight', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
-                  </div>
+                    <!-- Weight Input -->
+                    <div class="col-span-4 flex items-center justify-center">
+                      <input type="number" step="0.5" value="${set.weight}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'weight', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
+                    </div>
 
-                  <!-- Reps Input -->
-                  <div class="col-span-3 flex items-center justify-center">
-                    <input type="number" value="${set.reps}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'reps', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
-                  </div>
+                    <!-- Reps Input -->
+                    <div class="col-span-4 flex items-center justify-center">
+                      <input type="number" value="${set.reps}" onchange="updateSetVal('${ex.id}', ${sIdx}, 'reps', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-white rounded-lg py-1 border border-neutral-700 focus:outline-none focus:border-ios-neon text-xs">
+                    </div>
 
-                  <!-- RIR Selector -->
-                  <div class="col-span-2 flex items-center justify-center">
-                    <select onchange="updateSetVal('${ex.id}', ${sIdx}, 'rir', this.value)" class="w-full bg-black/50 text-center font-mono font-bold text-neutral-300 rounded-lg py-1 border border-neutral-700 text-[10px] focus:outline-none">
-                      <option value="0" ${set.rir == 0 ? 'selected' : ''}>0 RIR</option>
-                      <option value="1" ${set.rir == 1 ? 'selected' : ''}>1 RIR</option>
-                      <option value="2" ${set.rir == 2 ? 'selected' : ''}>2 RIR</option>
-                      <option value="3" ${set.rir == 3 ? 'selected' : ''}>3 RIR</option>
-                    </select>
+                    <!-- Complete Checkbox -->
+                    <div class="col-span-2 flex items-center justify-end">
+                      <button onclick="toggleSetComplete('${ex.id}', ${sIdx})" class="w-7 h-7 rounded-xl flex items-center justify-center transition ${
+                        set.completed 
+                          ? 'bg-ios-neon text-black shadow-glow-green' 
+                          : isExactActiveSet
+                          ? 'bg-ios-neon/30 text-ios-neon border border-ios-neon hover:bg-ios-neon hover:text-black animate-pulse'
+                          : 'bg-neutral-800 text-neutral-500 hover:text-white'
+                      }">
+                        <i class="ph-bold ph-check text-sm"></i>
+                      </button>
+                    </div>
                   </div>
-
-                  <!-- Complete Checkbox -->
-                  <div class="col-span-2 flex items-center justify-end">
-                    <button onclick="toggleSetComplete('${ex.id}', ${sIdx})" class="w-7 h-7 rounded-xl flex items-center justify-center transition ${
-                      set.completed 
-                        ? 'bg-ios-neon text-black shadow-glow-green' 
-                        : isExactActiveSet
-                        ? 'bg-ios-neon/30 text-ios-neon border border-ios-neon hover:bg-ios-neon hover:text-black animate-pulse'
-                        : 'bg-neutral-800 text-neutral-500 hover:text-white'
-                    }">
-                      <i class="ph-bold ph-check text-sm"></i>
-                    </button>
-                  </div>
-                </div>
-              `;}).join('')}
+                `;
+              }).join('')}
             </div>
 
             <!-- Add Set Row Button & Quick Form Trigger -->
@@ -3405,10 +3468,10 @@
        ========================================================= */
     window.onload = function() {
       generateIOSAppIcon();
-      initClock();
       renderSetupTiles();
       renderWeeklyPlanCards();
       updateSupersetUI();
+      updateRIRToggleUI();
       renderHypertrophyLandmarks();
       renderRecoveryHeatmap();
       renderPRCards();
