@@ -119,7 +119,7 @@
 
     /* iOS Safe Area Top Inset for Dynamic Island & Notch */
     .safe-pt {
-      padding-top: max(48px, env(safe-area-inset-top, 48px));
+      padding-top: env(safe-area-inset-top, 16px);
     }
   </style>
 </head>
@@ -130,7 +130,7 @@
   <div class="w-full max-w-md min-h-screen flex flex-col bg-black relative safe-pt">
 
     <!-- Tab 1: DASHBOARD & TRAJECTORY VIEW -->
-    <main id="tab-dashboard" class="tab-pane flex-1 p-4 space-y-5 animate-fadeIn">
+    <main id="tab-dashboard" class="tab-pane flex-1 px-4 pt-2 pb-4 space-y-5 animate-fadeIn">
       
       <!-- Welcome, Readiness & App Update Button -->
       <div class="flex items-center justify-between gap-2">
@@ -368,7 +368,7 @@
     </main>
 
     <!-- Tab 2: TRAIN / ACTIVE WORKOUT LOGGER -->
-    <main id="tab-train" class="tab-pane hidden flex-1 p-4 space-y-4 animate-fadeIn">
+    <main id="tab-train" class="tab-pane hidden flex-1 px-4 pt-2 pb-4 space-y-4 animate-fadeIn">
       
       <!-- Top Active Workout Header -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3 shadow-lg">
@@ -480,7 +480,7 @@
     </main>
 
     <!-- Tab 3: SETUP & SCHEDULE MATRIX (BODY MAP & EQUIPMENT) -->
-    <main id="tab-plan" class="tab-pane hidden flex-1 p-4 space-y-5 animate-fadeIn">
+    <main id="tab-plan" class="tab-pane hidden flex-1 px-4 pt-2 pb-4 space-y-5 animate-fadeIn">
       
       <!-- Split Frequency Picker -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
@@ -673,7 +673,7 @@
     </main>
 
     <!-- Tab 4: LOG / PREVIOUS SESSIONS SUMMARY PAGE -->
-    <main id="tab-log" class="tab-pane hidden flex-1 p-4 space-y-4 animate-fadeIn">
+    <main id="tab-log" class="tab-pane hidden flex-1 px-4 pt-2 pb-4 space-y-4 animate-fadeIn">
       
       <!-- Log Page Header & Lifetime Overview -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3 shadow-lg">
@@ -712,7 +712,7 @@
     </main>
 
     <!-- Tab 5: SUPPLEMENT PROTOCOL HUB -->
-    <main id="tab-supps" class="tab-pane hidden flex-1 p-4 space-y-4 animate-fadeIn">
+    <main id="tab-supps" class="tab-pane hidden flex-1 px-4 pt-2 pb-4 space-y-4 animate-fadeIn">
       
       <!-- Supplement Header & Weight Input -->
       <div class="bg-ios-card rounded-3xl p-4 border border-neutral-800 space-y-3">
